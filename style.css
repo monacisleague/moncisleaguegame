@@ -1,0 +1,83 @@
+/* Importiamo un font in pixel direttamente da Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* Sfondo nero generale e font in pixel */
+body {
+    margin: 0;
+    padding: 0;
+    /* Usiamo il font "Press Start 2P" che è il classico font in pixel */
+    font-family: 'Press Start 2P', monospace;
+    background-color: #000000;
+    color: #FFD700;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    /* Forza il browser a mantenere i pixel netti e taglienti */
+    image-rendering: pixelated;
+}
+
+/* Stile della schermata: riquadro nero con bordo oro a pixel netti */
+.screen {
+    text-align: center;
+    width: 100%;
+    max-width: 650px;
+    padding: 40px;
+    background-color: #0b0b0b;
+    /* Bordo pieno e squadrato, tipico dei giochi retro */
+    border: 4px solid #FFD700;
+    box-shadow: 0 0 0 4px #000000, 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+/* Classe per nascondere le schermate non attive */
+.hidden {
+    display: none !important;
+}
+
+/* Titoli e testi in oro in stile pixel */
+h1, h2, p {
+    color: #FFD700;
+    line-height: 1.6;
+}
+
+h1 {
+    font-size: 1.8rem; /* Nei font pixel le dimensioni sono più piccole ma l'impatto è forte */
+    margin-bottom: 20px;
+    text-shadow: 3px 3px #000000;
+}
+
+h2 {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+}
+
+p {
+    font-size: 0.75rem;
+    margin-bottom: 30px;
+}
+
+/* STILE DEI BOTTONI: Tasti in oro, scritte in nero, squadrati in stile retro */
+button {
+    font-family: 'Press Start 2P', monospace; /* Anche i bottoni usano il font pixel */
+    background-color: #FFD700;
+    color: #000000;
+    border: 3px solid #000000; /* Bordo nero per dare l'effetto pixel */
+    padding: 14px 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 10px;
+    transition: transform 0.1s, background-color 0.2s;
+    box-shadow: 4px 4px 0px #ffffff; /* Effetto rilassato/retro tipico dei bottoni 8-bit */
+}
+
+/* Effetto quando passi il mouse sopra i tasti */
+button:hover {
+    background-color: #e6c200;
+}
+
+/* Effetto quando clicchi il tasto (il bottone "affonda") */
+button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #ffffff;
+}
