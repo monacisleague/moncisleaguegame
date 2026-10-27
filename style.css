@@ -134,3 +134,26 @@ button:active {
         box-shadow: 1px 1px 0px #ffffff;
     }
 }
+/* STILE TABELLA CLASSIFICA */
+#standings-container {
+    margin: 15px 0;
+    overflow-x: auto;
+}
+
+#standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.65rem;
+    text-align: left;
+}
+
+#standings-table th, #standings-table td {
+    padding: 8px;
+    border-bottom: 1px dashed #FFD700;
+}
+
+#standings-table th {
+    color: #FFD700;
+    border-bottom: 2px solid #FFD700;
+}
+
