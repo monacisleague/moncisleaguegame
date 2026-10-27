@@ -1,7 +1,5 @@
-/* Importiamo il font pixel da Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-/* Reset e impostazioni di base */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -20,7 +18,6 @@ body {
     image-rendering: pixelated;
 }
 
-/* CONTAINER SCHERMATA (Ottimizzato per PC) */
 .screen {
     text-align: center;
     width: 100%;
@@ -31,35 +28,41 @@ body {
     box-shadow: 0 0 0 4px #000000, 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
-/* Classe universale per nascondere le schermate non attive */
 .hidden {
     display: none !important;
 }
 
-/* TITOLI E TESTI IN PIXEL */
-h1 {
+h1, h2 {
     color: #FFD700;
-    font-size: 1.6rem;
     line-height: 1.4;
     margin-bottom: 20px;
     text-shadow: 3px 3px #000000;
 }
 
-h2 {
-    color: #FFD700;
-    font-size: 1.2rem;
-    line-height: 1.4;
-    margin-bottom: 15px;
-}
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.2rem; }
 
 p {
     color: #FFD700;
     font-size: 0.75rem;
     line-height: 1.6;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
-/* CONTENITORE BOTTONI */
+#scoreboard {
+    font-size: 1rem;
+    background: #000;
+    border: 2px solid #FFD700;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+#clock-display {
+    font-size: 0.8rem;
+    color: #00ffcc;
+    margin-bottom: 15px;
+}
+
 #menu-buttons, #controls {
     display: flex;
     flex-direction: column;
@@ -67,74 +70,54 @@ p {
     gap: 15px;
 }
 
-/* BOTTONI IN PIXEL (Tasti oro, scritte nere) */
 button {
     font-family: 'Press Start 2P', monospace;
     background-color: #FFD700;
     color: #000000;
     border: 3px solid #000000;
-    padding: 16px 24px;
-    font-size: 0.85rem;
+    padding: 14px 20px;
+    font-size: 0.75rem;
     font-weight: bold;
     cursor: pointer;
     width: 100%;
     max-width: 320px;
-    transition: transform 0.1s, background-color 0.2s;
     box-shadow: 4px 4px 0px #ffffff;
-    -webkit-tap-highlight-color: transparent; /* Rimuove l'alone blu al tocco su Android/iOS */
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Effetto al passaggio del mouse (PC) */
-button:hover {
-    background-color: #e6c200;
+button:hover { background-color: #e6c200; }
+button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #ffffff; }
+
+.settings-group {
+    margin-bottom: 20px;
+    text-align: left;
 }
 
-/* Effetto al click o al tocco con il dito (Telefono/PC) */
-button:active {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #ffffff;
+.settings-group h3 {
+    font-size: 0.75rem;
+    color: #FFD700;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #FFD700;
+    padding-bottom: 4px;
 }
 
-/* ========================================================= */
-/* ADATTAMENTO PER REALTÀ MOBILE / TELEFONI (Schermi < 600px) */
-/* ========================================================= */
-@media (max-width: 600px) {
-    body {
-        padding: 10px;
-    }
-
-    .screen {
-        padding: 25px 15px;
-        border-width: 3px;
-        box-shadow: 0 0 0 3px #000000, 0 0 12px rgba(255, 215, 0, 0.25);
-    }
-
-    h1 {
-        font-size: 1.25rem; /* Un po' più piccolo sul telefono per non andare a capo male */
-        margin-bottom: 15px;
-    }
-
-    h2 {
-        font-size: 1rem;
-    }
-
-    p {
-        font-size: 0.65rem; /* Testo leggibile anche su schermi stretti */
-        margin-bottom: 20px;
-    }
-
-    button {
-        padding: 14px 18px;
-        font-size: 0.75rem;
-        max-width: 100%; /* I bottoni occupano bene lo spazio su mobile */
-        box-shadow: 3px 3px 0px #ffffff;
-    }
-
-    button:active {
-        box-shadow: 1px 1px 0px #ffffff;
-    }
+.settings-group label {
+    display: block;
+    font-size: 0.6rem;
+    margin-bottom: 6px;
 }
-/* STILE TABELLA CLASSIFICA */
+
+.settings-group select, 
+.settings-group input[type="range"] {
+    width: 100%;
+    padding: 8px;
+    font-family: 'Press Start 2P', monospace;
+    background-color: #000000;
+    color: #FFD700;
+    border: 2px solid #FFD700;
+    font-size: 0.6rem;
+}
+
 #standings-container {
     margin: 15px 0;
     overflow-x: auto;
@@ -156,4 +139,3 @@ button:active {
     color: #FFD700;
     border-bottom: 2px solid #FFD700;
 }
-
