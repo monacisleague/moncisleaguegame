@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monaci's League</title>
-    <!-- Collega il file CSS per la grafica -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,23 +12,20 @@
     <div id="main-menu" class="screen">
         <h1 id="main-title">Monaci's League</h1>
         <p id="welcome-text">La lega calcistica definitiva.</p>
-        
         <div id="menu-buttons">
             <button id="btn-start">Gioca</button>
             <button id="btn-settings">Impostazioni</button>
         </div>
     </div>
 
-    <!-- SCHERMATA 2: IMPOSTAZIONI (Inizialmente nascosta) -->
+    <!-- SCHERMATA 2: IMPOSTAZIONI -->
     <div id="settings-screen" class="screen hidden">
         <h2>Impostazioni</h2>
-        
         <div class="settings-group">
             <h3>Volume</h3>
             <label for="volume-audio">Musica & SFX:</label>
             <input type="range" id="volume-audio" min="0" max="100" value="80">
         </div>
-
         <div class="settings-group">
             <h3>Controlli & Mappatura</h3>
             <label for="control-device">Dispositivo:</label>
@@ -38,25 +34,23 @@
                 <option value="pc">Computer (Tastiera/Mouse)</option>
             </select>
         </div>
-
         <button id="btn-settings-back">Torna al Menu</button>
     </div>
 
-    <!-- SCHERMATA 3: SELEZIONE SQUADRA E DIFFICOLTÀ (Inizialmente nascosta) -->
+    <!-- SCHERMATA 3: SELEZIONE SQUADRA E DIFFICOLTÀ -->
     <div id="team-select-screen" class="screen hidden">
         <h2>Seleziona la Squadra</h2>
         <div class="settings-group">
             <label for="team-choice">La tua Squadra:</label>
             <select id="team-choice">
-                <option value="monaci-fc">Monaci FC</option>
-                <option value="lightning-eleven">Lightning Eleven</option>
-                <option value="fire-strikers">Fire Strikers</option>
-                <option value="shadow-dragons">Shadow Dragons</option>
-                <option value="royal-academy">Royal Academy</option>
-                <option value="neo-japan">Neo Japan</option>
+                <option value="Monaci FC">Monaci FC</option>
+                <option value="Lightning Eleven">Lightning Eleven</option>
+                <option value="Fire Strikers">Fire Strikers</option>
+                <option value="Shadow Dragons">Shadow Dragons</option>
+                <option value="Royal Academy">Royal Academy</option>
+                <option value="Neo Japan">Neo Japan</option>
             </select>
         </div>
-
         <h2>Seleziona Difficoltà</h2>
         <div class="settings-group">
             <select id="difficulty-choice">
@@ -65,48 +59,53 @@
                 <option value="difficile">Difficile</option>
             </select>
         </div>
-
         <div id="controls">
             <button id="btn-launch-match">Inizia Partita</button>
             <button id="btn-team-back">Indietro</button>
         </div>
     </div>
 
-    <!-- SCHERMATA 4: PARTITA E CLASSIFICA (Inizialmente nascosta) -->
-    <div id="game-screen" class="screen hidden">
-        <h2 id="league-title">Monaci's League - Classifica</h2>
+    <!-- SCHERMATA 4: MOTORE DELLA PARTITA (In-Match) -->
+    <div id="match-screen" class="screen hidden">
+        <h2 id="match-title">Monaci's League - Match</h2>
         
+        <div id="scoreboard">
+            <span id="home-team-label">Squadra</span> <span id="home-score">0</span> - <span id="away-score">0</span> <span id="away-team-label">Avversario</span>
+        </div>
+        <div id="clock-display">Minuto: <span id="match-minute">0</span>'</div>
+
         <div id="content-box">
-            <p id="game-message">Partita conclusa! Ecco la classifica aggiornata delle 6 squadre:</p>
-            
-            <!-- Tabella della classifica provvisoria -->
-            <div id="standings-container">
-                <table id="standings-table">
-                    <thead>
-                        <tr>
-                            <th>Pos</th>
-                            <th>Squadra</th>
-                            <th>Pt</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>1°</td><td id="team-1-name">Monaci FC</td><td>0</td></tr>
-                        <tr><td>2°</td><td id="team-2-name">Lightning Eleven</td><td>0</td></tr>
-                        <tr><td>3°</td><td id="team-3-name">Fire Strikers</td><td>0</td></tr>
-                        <tr><td>4°</td><td id="team-4-name">Shadow Dragons</td><td>0</td></tr>
-                        <tr><td>5°</td><td id="team-5-name">Royal Academy</td><td>0</td></tr>
-                        <tr><td>6°</td><td id="team-6-name">Neo Japan</td><td>0</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <p id="match-log">Il match sta per cominciare. Primi 4 minuti: Ingresso Scalato (1v1 -> 4v4).</p>
         </div>
 
         <div id="controls">
-            <button id="btn-next-match">Gioca Prossima Partita</button>
+            <button id="btn-play-action">Gioca Azione / Avanza Tempo</button>
+            <button id="btn-special-card">Usa Carta Speciale</button>
         </div>
     </div>
 
-    <!-- Collega il file JavaScript -->
+    <!-- SCHERMATA 5: CLASSIFICA DELLA LEGA -->
+    <div id="standings-screen" class="screen hidden">
+        <h2>Classifica Ufficiale</h2>
+        <div id="standings-container">
+            <table id="standings-table">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Squadra</th>
+                        <th>Pt</th>
+                    </tr>
+                </thead>
+                <tbody id="standings-body">
+                    <!-- Generato via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        <div id="controls">
+            <button id="btn-next-round">Prossimo Turno</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
