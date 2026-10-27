@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaci's League</title>
+    <!-- Collega il file CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- SCHERMATA 1: MENU PRINCIPALE -->
+    <div id="main-menu" class="screen">
+        <h1 id="main-title">Monaci's League</h1>
+        <p id="welcome-text">La lega calcistica definitiva.</p>
+        
+        <!-- I due bottoni del menu -->
+        <div id="menu-buttons">
+            <button id="btn-start">Gioca</button>
+            <button id="btn-settings">Impostazioni</button>
+        </div>
+    </div>
+
+    <!-- SCHERMATA 2: LA LEGA / GIOCO (inizialmente nascosta) -->
+    <div id="game-screen" class="screen hidden">
+        <h2 id="league-title">Stagione in corso</h2>
+        
+        <div id="content-box">
+            <p id="game-message">Qui appariranno i risultati e le sfide della Monaci's League.</p>
+        </div>
+
+        <div id="controls">
+            <button id="btn-action">Gioca Turno</button>
+            <button id="btn-back">Torna al Menu</button>
+        </div>
+    </div>
+
+    <!-- Collega il file JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
