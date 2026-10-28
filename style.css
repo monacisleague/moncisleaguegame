@@ -6,7 +6,7 @@
     padding: 0;
     user-select: none;
     -webkit-user-select: none;
-    font-family: 'Press Start 2P', monospace, sans-serif;
+    font-family: 'Press Start 2P', monospace;
 }
 
 body, html {
@@ -20,21 +20,22 @@ body, html {
     align-items: center;
 }
 
-/* CORNICE ESTERNA GIALLA RETRÒ */
+/* LA SCHERMATA SU PC MANTIENE LA FORMA VERTICALE DEL TELEFONO */
 .screen {
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
+    max-width: 420px; /* Larghezza da telefono per PC */
+    max-height: 900px; /* Altezza da telefono per PC */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     background-color: #000000;
-    border: 8px solid #ffd700;
+    border: 6px solid #ffd700; /* Bordo giallo retro */
     z-index: 10;
     padding: 20px;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
 }
 
 .hidden {
@@ -43,49 +44,47 @@ body, html {
 
 /* TITOLO IN PIXEL ART */
 h1 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     color: #ffd700;
     text-transform: uppercase;
     text-align: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem;
     line-height: 1.4;
-    text-shadow: 3px 3px 0px #333300;
 }
 
 /* SOTTOTITOLO */
 .subtitle {
     color: #ffd700;
-    font-size: 0.7rem;
-    margin-bottom: 3rem;
+    font-size: 0.65rem;
+    margin-bottom: 2.5rem;
     text-align: center;
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
-/* BOX DEI PULSANTI: Distanziati e ordinati sia su PC che su mobile */
+/* CONTAINER TASTI DISTANZIATI */
 .menu-box {
     display: flex;
     flex-direction: column;
-    gap: 25px; /* Distanza maggiore tra un tasto e l'altro */
-    width: 85%;
-    max-width: 340px;
+    gap: 25px; /* Distanziamento verticale */
+    width: 90%;
+    max-width: 300px;
 }
 
-/* PULSANTI CON PROFONDITÀ PIXEL ART E SPESSORE BIANCO COME IN FOTO */
+/* BOTTONI CON PROFONDITÀ BIANCA NETTA */
 button, .btn-menu {
     width: 100%;
-    padding: 18px 20px;
+    padding: 16px 15px;
     background-color: #ffd700;
     border: 3px solid #000000;
     color: #000000;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: bold;
     cursor: pointer;
     text-align: center;
-    /* Profondità tridimensionale netta in pixel art con lo spessore bianco */
+    /* Spessore bianco di profondità 3D */
     box-shadow: 0 8px 0px #ffffff;
-    transition: transform 0.05s ease, box-shadow 0.05s ease;
     border-radius: 0px;
-    margin-bottom: 5px;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
 }
 
 button:active, .btn-menu:active {
@@ -96,71 +95,72 @@ button:active, .btn-menu:active {
 /* IMPOSTAZIONI */
 .settings-box {
     background: #000000;
-    padding: 25px;
+    padding: 20px;
     border: 3px solid #ffd700;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
     width: 90%;
-    max-width: 380px;
 }
 
 .setting-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: #ffd700;
 }
 
 select {
-    padding: 8px;
+    padding: 6px;
     background: #000000;
     color: #ffd700;
     border: 2px solid #ffd700;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-family: 'Press Start 2P', monospace;
 }
 
-/* SCHERMATA PARTITA E CANVAS PIXEL ART */
+/* SCHERMATA CAMPO / PARTITA */
 #match-screen {
     position: relative;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    max-width: 420px;
+    max-height: 900px;
     background-color: #000000;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    border: none;
+    padding: 0;
 }
 
 #gameCanvas {
     display: block;
     background-color: #2e7d32;
-    border: 4px solid #ffd700;
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+    width: 100%;
+    height: 100%;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
 }
 
-/* TABELLONE PUNTEGGIO */
+/* SEGNAPUNTI */
 #scoreboard {
     position: absolute;
     top: 15px;
     display: flex;
-    gap: 15px;
+    gap: 12px;
     align-items: center;
-    background: rgba(0, 0, 0, 0.95);
-    padding: 10px 18px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 8px 14px;
     border: 2px solid #ffd700;
     z-index: 20;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: #ffd700;
 }
 
 .score-val {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #ffffff;
 }
 
@@ -172,14 +172,14 @@ select {
     position: absolute;
     bottom: 15px;
     background: rgba(0, 0, 0, 0.9);
-    padding: 8px 14px;
+    padding: 6px 10px;
     border: 2px solid #ff4444;
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     z-index: 20;
     color: #ff4444;
 }
 
-/* CONTROLLI TOUCH: NASCOSTI SU PC */
+/* CONTROLLI TOUCH: VISIBILI SOLO SU MOBILE */
 #touch-controls {
     position: absolute;
     bottom: 20px;
@@ -187,7 +187,7 @@ select {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 15px;
     pointer-events: none;
     z-index: 30;
 }
@@ -197,8 +197,8 @@ body.is-pc #touch-controls {
 }
 
 #joystick-base {
-    width: 110px;
-    height: 110px;
+    width: 100px;
+    height: 100px;
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid #ffd700;
     border-radius: 50%;
@@ -207,31 +207,30 @@ body.is-pc #touch-controls {
 }
 
 #joystick-stick {
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
     background: #ffd700;
     border-radius: 50%;
     position: absolute;
-    top: 32.5px;
-    left: 32.5px;
-    box-shadow: 0 0 10px #ffd700;
+    top: 28px;
+    left: 28px;
 }
 
 .action-buttons {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     pointer-events: auto;
 }
 
 .btn-touch {
-    width: 60px;
-    height: 60px;
+    width: 55px;
+    height: 55px;
     border-radius: 50%;
     background: #000000;
     border: 2px solid #ffd700;
     color: #ffd700;
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     font-weight: bold;
     display: flex;
     flex-direction: column;
