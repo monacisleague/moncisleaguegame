@@ -1,1 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaci's League</title>
+    <!-- Font Pixel Art da Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+    <!-- SCHERMATA PRINCIPALE (MENU) -->
+    <div id="main-menu" class="screen">
+        <!-- Header con Logo e Titolo -->
+        <header class="league-header">
+            <div class="logo-placeholder">⚽</div>
+            <h1 class="gold-text">MONACI'S LEAGUE</h1>
+        </header>
+
+        <!-- Pulsanti Principali -->
+        <div class="menu-buttons">
+            <button id="btn-play" class="btn-gold">GIOCA</button>
+            <button id="btn-settings" class="btn-gold">IMPOSTAZIONI</button>
+        </div>
+    </div>
+
+    <!-- MODALE / SCHERMATA IMPOSTAZIONI -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="gold-text">IMPOSTAZIONI</h2>
+
+            <!-- Sezione Audio -->
+            <section class="settings-group">
+                <h3 class="gold-text">AUDIO</h3>
+                <div class="setting-item">
+                    <label for="music-volume">Musica:</label>
+                    <input type="range" id="music-volume" min="0" max="100" value="80">
+                    <span id="music-val">80%</span>
+                </div>
+                <div class="setting-item">
+                    <label for="sfx-volume">Effetti SFX:</label>
+                    <input type="range" id="sfx-volume" min="0" max="100" value="100">
+                    <span id="sfx-val">100%</span>
+                </div>
+            </section>
+
+            <!-- Sezione Controlli Tastiera -->
+            <section class="settings-group">
+                <h3 class="gold-text">CONTROLLI TASTIERA</h3>
+                <div class="controls-grid">
+                    <div><span>Spostamento:</span> <strong>Frecce / WASD</strong></div>
+                    <div><span>Azione / Tiro:</span> <strong>Spazio</strong></div>
+                    <div><span>Passaggio:</span> <strong>X</strong></div>
+                </div>
+            </section>
+
+            <!-- Sezione Controlli Touch -->
+            <section class="settings-group">
+                <h3 class="gold-text">CONTROLLI TOUCH (MOBILE)</h3>
+                <div class="setting-item">
+                    <label for="touch-toggle">Attiva Joypad Touch:</label>
+                    <input type="checkbox" id="touch-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="touch-size">Dimensione Tasti:</label>
+                    <select id="touch-size">
+                        <option value="small">Piccola</option>
+                        <option value="medium" selected>Media</option>
+                        <option value="large">Grande</option>
+                    </select>
+                </div>
+            </section>
+
+            <button id="btn-close-settings" class="btn-gold">SALVA E CHIUDI</button>
+        </div>
+    </div>
+
+    <!-- Segnaposto per la FASE 2 (Selezione Squadre) -->
+    <div id="team-select-screen" class="screen hidden">
+        <h1 class="gold-text">SELEZIONE SQUADRE</h1>
+        <p>Presto disponibile nella FASE 2!</p>
+        <button id="btn-back-to-menu" class="btn-gold">INDIETRO</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
