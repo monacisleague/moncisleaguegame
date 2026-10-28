@@ -10,7 +10,7 @@
 </head>
 <body>
 
-    <!-- SCHERMATA PRINCIPALE (MENU) -->
+    <!-- FASE 1: SCHERMATA PRINCIPALE (MENU) -->
     <div id="main-menu" class="screen">
         <header class="league-header">
             <img src="logo.png" alt="Logo Monaci's League" class="game-logo">
@@ -23,7 +23,7 @@
         </div>
     </div>
 
-    <!-- SCHERMATA SELEZIONE SQUADRA E DIFFICOLTÀ CON CAROSELLI -->
+    <!-- FASE 2: SCHERMATA SELEZIONE SQUADRA E DIFFICOLTÀ CON CAROSELLI -->
     <div id="team-select-screen" class="screen hidden">
         <h1 class="gold-text">PREPARAZIONE PARTITA</h1>
 
@@ -63,7 +63,7 @@
         </div>
     </div>
 
-    <!-- MODALE IMPOSTAZIONI -->
+    <!-- FASE 1: MODALE IMPOSTAZIONI -->
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
             <h2 class="gold-text">IMPOSTAZIONI</h2>
@@ -111,12 +111,19 @@
         </div>
     </div>
 
-    <!-- Segnaposto per la FASE 3 (Gameplay) -->
+    <!-- FASE 3: SCHERMATA GAMEPLAY CON CAMPO -->
     <div id="gameplay-screen" class="screen hidden">
-        <h1 class="gold-text">GAMEPLAY</h1>
-        <p id="selected-summary-text" class="gold-subheading"></p>
-        <p style="margin-top: 15px;">Pronto per la FASE 3!</p>
-        <button id="btn-back-to-select" class="btn-gold" style="margin-top: 20px;">CAMBIA IMPOSTAZIONI</button>
+        <header class="gameplay-header">
+            <span id="match-info" class="gold-subheading">SQUADRA vs CPU</span>
+            <div id="scoreboard" class="gold-text">0 - 0</div>
+        </header>
+
+        <!-- Campo da Gioco (Canvas) -->
+        <div class="field-container">
+            <canvas id="game-canvas" width="600" height="400"></canvas>
+        </div>
+
+        <button id="btn-back-to-select" class="btn-gold">ABBANDONA PARTITA</button>
     </div>
 
     <script src="script.js"></script>
