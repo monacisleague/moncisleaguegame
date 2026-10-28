@@ -12,25 +12,74 @@
 
     <!-- SCHERMATA PRINCIPALE (MENU) -->
     <div id="main-menu" class="screen">
-        <!-- Header con il tuo Logo e Titolo -->
         <header class="league-header">
             <img src="logo.png" alt="Logo Monaci's League" class="game-logo">
             <h1 class="gold-text">MONACI'S LEAGUE</h1>
         </header>
 
-        <!-- Pulsanti Principali -->
         <div class="menu-buttons">
             <button id="btn-play" class="btn-gold">GIOCA</button>
             <button id="btn-settings" class="btn-gold">IMPOSTAZIONI</button>
         </div>
     </div>
 
-    <!-- MODALE / SCHERMATA IMPOSTAZIONI -->
+    <!-- SCHERMATA SELEZIONE SQUADRA E DIFFICOLTÀ (FASE 2) -->
+    <div id="team-select-screen" class="screen hidden">
+        <h1 class="gold-text">PREPARAZIONE PARTITA</h1>
+
+        <!-- Sezione Selezione Squadra -->
+        <div class="selection-section">
+            <h2 class="gold-subheading">SCEGLI LA TUA SQUADRA</h2>
+            <div class="teams-grid">
+                <button class="team-card team-polar" data-team="FC POLAR">
+                    <span class="color-badge badge-polar"></span>
+                    <span class="team-name">FC POLAR</span>
+                </button>
+                <button class="team-card team-calabroni" data-team="CALABRONI FC">
+                    <span class="color-badge badge-calabroni"></span>
+                    <span class="team-name">CALABRONI FC</span>
+                </button>
+                <button class="team-card team-darkknights" data-team="DARK KNIGHTS">
+                    <span class="color-badge badge-darkknights"></span>
+                    <span class="team-name">DARK KNIGHTS</span>
+                </button>
+                <button class="team-card team-birrareal" data-team="FC BIRRAREAL">
+                    <span class="color-badge badge-birrareal"></span>
+                    <span class="team-name">FC BIRRAREAL</span>
+                </button>
+                <button class="team-card team-kinglions" data-team="KING LIONS FC">
+                    <span class="color-badge badge-kinglions"></span>
+                    <span class="team-name">KING LIONS FC</span>
+                </button>
+                <button class="team-card team-grizzly" data-team="GRIZZLY FC">
+                    <span class="color-badge badge-grizzly"></span>
+                    <span class="team-name">GRIZZLY FC</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sezione Selezione Difficoltà -->
+        <div class="selection-section">
+            <h2 class="gold-subheading">DIFFICOLTÀ</h2>
+            <div class="difficulty-buttons">
+                <button class="btn-diff" data-diff="FACILE">FACILE</button>
+                <button class="btn-diff active" data-diff="MEDIO">MEDIO</button>
+                <button class="btn-diff" data-diff="DIFFICILE">DIFFICILE</button>
+            </div>
+        </div>
+
+        <!-- Pulsanti di Azione -->
+        <div class="action-buttons">
+            <button id="btn-start-match" class="btn-gold" disabled>AVVIA PARTITA</button>
+            <button id="btn-back-to-menu" class="btn-gold">INDIETRO</button>
+        </div>
+    </div>
+
+    <!-- MODALE IMPOSTAZIONI -->
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
             <h2 class="gold-text">IMPOSTAZIONI</h2>
 
-            <!-- Sezione Audio -->
             <section class="settings-group">
                 <h3 class="gold-text">AUDIO</h3>
                 <div class="setting-item">
@@ -45,7 +94,6 @@
                 </div>
             </section>
 
-            <!-- Sezione Controlli Tastiera -->
             <section class="settings-group">
                 <h3 class="gold-text">CONTROLLI TASTIERA</h3>
                 <div class="controls-grid">
@@ -55,7 +103,6 @@
                 </div>
             </section>
 
-            <!-- Sezione Controlli Touch -->
             <section class="settings-group">
                 <h3 class="gold-text">CONTROLLI TOUCH (MOBILE)</h3>
                 <div class="setting-item">
@@ -76,11 +123,12 @@
         </div>
     </div>
 
-    <!-- Segnaposto per la FASE 2 (Selezione Squadre) -->
-    <div id="team-select-screen" class="screen hidden">
-        <h1 class="gold-text">SELEZIONE SQUADRE</h1>
-        <p>Presto disponibile nella FASE 2!</p>
-        <button id="btn-back-to-menu" class="btn-gold">INDIETRO</button>
+    <!-- Segnaposto per la FASE 3 (Gameplay) -->
+    <div id="gameplay-screen" class="screen hidden">
+        <h1 class="gold-text">GAMEPLAY</h1>
+        <p id="selected-summary-text" class="gold-subheading"></p>
+        <p style="margin-top: 15px;">Pronto per la FASE 3!</p>
+        <button id="btn-back-to-select" class="btn-gold" style="margin-top: 20px;">CAMBIA SQUADRA</button>
     </div>
 
     <script src="script.js"></script>
