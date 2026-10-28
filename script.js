@@ -1,4 +1,3 @@
-// Dati Lega
 const teamsList = [
     { name: "Monaci FC", points: 0 },
     { name: "Lightning Eleven", points: 0 },
@@ -16,7 +15,6 @@ let currentMinute = 0;
 let matchActive = false;
 let hasBallPossession = true;
 
-// Modalità Presidenziale
 let isPresidentialMode = false;
 let isMobile = false;
 let difficulty = "media";
@@ -25,16 +23,13 @@ let isDoubleGoalActive = false;
 let isTheWheelActive = false; 
 let matchFormationLevel = 1;
 
-// CANVAS E CAMPO VERTICALE
 let canvas, ctx;
 const PITCH_WIDTH = 360;
 const PITCH_HEIGHT = 1000;
 
-// Caricamento dello sprite sheet dello stadio
 const stadiumImage = new Image();
 stadiumImage.src = 'stadium_sheet.png';
 
-// Giocatori
 let player = { name: "Axel", x: 180, y: 700, size: 14, speed: 3.5 };
 let opponent = { name: "Mark", x: 180, y: 300, size: 14, speed: 2.6 };
 
@@ -42,9 +37,7 @@ let homeGK = { name: "Portiere Tuo", x: 180, y: 935, size: 16, active: false };
 let awayGK = { name: "Portiere Rivale", x: 180, y: 65, size: 16, active: false };
 
 let ball = { x: 180, y: 680, vx: 0, vy: 0, size: 6 };
-
 let overlayBanner = { text: "", color: "#FFD700", timer: 0 };
-
 let cameraY = 400;
 let keys = {};
 let joystickVector = { x: 0, y: 0 };
@@ -137,12 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// RESIZE RISOLTO PER CORREGGERE LO SCHIACCIAMENTO SU PC
 function resizeCanvas() {
     if(!canvas) return;
-    // Manteniamo una risoluzione fissa verticale del canvas così non si stira orizzontalmente
-    canvas.width = 360;
-    canvas.height = 700; // Visuale ottimale ravvicinata
+    canvas.width = PITCH_WIDTH;
+    canvas.height = PITCH_HEIGHT;
 }
 window.addEventListener('resize', resizeCanvas);
 
@@ -225,13 +216,13 @@ function toggleSpecialButtonMode() {
         } else {
             if (mainTxt) mainTxt.textContent = "Carta Pres.";
             if (subTxt) subTxt.textContent = "Special";
-            btn.style.borderColor = "#00e5ff";
+            btn.style.borderColor = "#00f0ff";
         }
     });
 
     if (pcText) {
         pcText.textContent = isPresidentialMode ? "Rigore Pres." : "Carta Pres.";
-        pcText.style.color = isPresidentialMode ? "#ff3d00" : "#00e5ff";
+        pcText.style.color = isPresidentialMode ? "#ff3d00" : "#00f0ff";
     }
 }
 
@@ -244,7 +235,7 @@ function useSpecialPower() {
         ball.y = 220;
         ball.vx = 0; ball.vy = -14;
     } else {
-        triggerBigBanner("CARTA DEL PRESIDENTE!", "#00e5ff");
+        triggerBigBanner("CARTA DEL PRESIDENTE!", "#00f0ff");
     }
 }
 
@@ -299,7 +290,7 @@ function startMatchEngine() {
         if (currentMinute === 2) {
             matchFormationLevel = 2;
             homeGK.active = true; awayGK.active = true;
-            triggerBigBanner("INGRESSO PORTIERI!", "#00e5ff");
+            triggerBigBanner("INGRESSO PORTIERI!", "#00f0ff");
         } else if (currentMinute === 4) {
             matchFormationLevel = 4;
             triggerBigBanner("4v4 COMPLETO!", "#ffb703");
@@ -362,8 +353,8 @@ function updateGame() {
     player.x = Math.max(20, Math.min(PITCH_WIDTH - 20, player.x));
     player.y = Math.max(50, Math.min(PITCH_HEIGHT - 50, player.y));
 
-    // Mantiene la telecamera puntata sul giocatore con inquadratura dinamica
-    cameraY = player.y - canvas.height / 2;
+    cameraY = player.y - 350;
+    cameraY = Math.max(0, Math.min(PITCH_HEIGHT - 700, cameraY));
 
     let oppSpeed = opponent.speed;
     if (difficulty === "facile") oppSpeed = 2.0;
@@ -387,7 +378,7 @@ function updateGame() {
         if (dAwayGK < awayGK.size + ball.size && ball.vy < 0) {
             ball.vy = 10;
             ball.vx = (Math.random() - 0.5) * 8;
-            triggerBigBanner("PARATA!", "#00e5ff");
+            triggerBigBanner("PARATA!", "#00f0ff");
         }
     }
 
@@ -404,7 +395,7 @@ function updateGame() {
         if (dHomeGK < homeGK.size + ball.size && ball.vy > 0) {
             ball.vy = -10;
             ball.vx = (Math.random() - 0.5) * 8;
-            triggerBigBanner("PARATA!", "#00e5ff");
+            triggerBigBanner("PARATA!", "#00f0ff");
         }
     }
 
@@ -457,21 +448,16 @@ function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    let scale = canvas.width / PITCH_WIDTH;
-    ctx.scale(scale, scale);
     ctx.translate(0, -cameraY);
 
-    // 1. Prato di sfondo sempre presente
     for (let i = 0; i < PITCH_HEIGHT; i += 80) {
         ctx.fillStyle = (i / 80) % 2 === 0 ? '#388e3c' : '#2e7d32';
         ctx.fillRect(0, i, PITCH_WIDTH, 80);
     }
 
-    // 2. Disegno dello Stadio dall'immagine stadium_sheet.png
     if (stadiumImage.complete && stadiumImage.naturalWidth !== 0) {
         ctx.drawImage(stadiumImage, 15, 30, 450, 335, 0, 0, PITCH_WIDTH, PITCH_HEIGHT);
     } else {
-        // Linee di campo di emergenza se l'immagine non è caricata
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.lineWidth = 3;
         ctx.strokeRect(15, 50, PITCH_WIDTH - 30, PITCH_HEIGHT - 100);
@@ -480,12 +466,11 @@ function drawGame() {
         ctx.stroke();
     }
 
-    // Portieri
     if (homeGK.active) {
         if (stadiumImage.complete && stadiumImage.naturalWidth !== 0) {
             ctx.drawImage(stadiumImage, 580, 40, 16, 24, homeGK.x - 8, homeGK.y - 12, 16, 24);
         } else {
-            ctx.fillStyle = '#00e5ff';
+            ctx.fillStyle = '#00f0ff';
             ctx.fillRect(homeGK.x - 8, homeGK.y - 8, 16, 16);
         }
     }
@@ -499,7 +484,6 @@ function drawGame() {
         }
     }
 
-    // Giocatori
     if (stadiumImage.complete && stadiumImage.naturalWidth !== 0) {
         ctx.drawImage(stadiumImage, 510, 100, 16, 24, opponent.x - 8, opponent.y - 12, 16, 24);
         ctx.drawImage(stadiumImage, 510, 40, 16, 24, player.x - 8, player.y - 12, 16, 24);
@@ -510,7 +494,6 @@ function drawGame() {
         ctx.fillRect(player.x - 7, player.y - 12, 14, 20);
     }
 
-    // Cerchio di selezione e nome
     ctx.strokeStyle = '#00ffcc';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -522,21 +505,19 @@ function drawGame() {
     ctx.textAlign = 'center';
     ctx.fillText(player.name, player.x, player.y + 18);
 
-    // Palla
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
     ctx.fill();
 
-    // Banner animato
     if (overlayBanner.timer > 0) {
         overlayBanner.timer--;
         ctx.fillStyle = overlayBanner.color;
-        ctx.font = 'bold 20px monospace';
+        ctx.font = 'bold 22px monospace';
         ctx.textAlign = 'center';
         ctx.shadowColor = "#000000";
         ctx.shadowBlur = 10;
-        ctx.fillText(overlayBanner.text, PITCH_WIDTH / 2, cameraY + canvas.height / (2 * scale) - 40);
+        ctx.fillText(overlayBanner.text, PITCH_WIDTH / 2, cameraY + 350);
         ctx.shadowBlur = 0;
     }
 
