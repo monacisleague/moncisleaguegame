@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Monaci's League</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -27,11 +27,11 @@
             <input type="range" id="volume-audio" min="0" max="100" value="80">
         </div>
         <div class="settings-group">
-            <h3>Controlli & Mappatura</h3>
-            <label for="control-device">Dispositivo:</label>
+            <h3>Controlli</h3>
+            <label for="control-device">Modalità:</label>
             <select id="control-device">
-                <option value="pc">Computer (WASD / Frecce + Spazio)</option>
-                <option value="mobile">Telefono (Touch)</option>
+                <option value="mobile">Touch Mobile (Joystick + Tasti Circolari)</option>
+                <option value="pc">Tastiera PC (WASD / Frecce)</option>
             </select>
         </div>
         <button id="btn-settings-back">Torna al Menu</button>
@@ -39,9 +39,8 @@
 
     <!-- SCHERMATA 3: SELEZIONE SQUADRA E DIFFICOLTÀ -->
     <div id="team-select-screen" class="screen hidden">
-        <h2>Seleziona la Squadra</h2>
+        <h2>Seleziona Squadra</h2>
         <div class="settings-group">
-            <label for="team-choice">La tua Squadra:</label>
             <select id="team-choice">
                 <option value="Monaci FC">Monaci FC</option>
                 <option value="Lightning Eleven">Lightning Eleven</option>
@@ -51,7 +50,7 @@
                 <option value="Neo Japan">Neo Japan</option>
             </select>
         </div>
-        <h2>Seleziona Difficoltà</h2>
+        <h2>Difficoltà</h2>
         <div class="settings-group">
             <select id="difficulty-choice">
                 <option value="facile">Facile</option>
@@ -65,24 +64,75 @@
         </div>
     </div>
 
-    <!-- SCHERMATA 4: CAMPO DA GIOCO (INTERATTIVO) -->
-    <div id="match-screen" class="screen hidden" style="max-width: 800px;">
-        <div id="match-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.7rem;">
-            <div><span id="home-name">Squadra</span>: <span id="home-score">0</span></div>
-            <div id="match-clock" style="color: #00ffcc;">Min: 0'</div>
-            <div><span id="away-name">Avversario</span>: <span id="away-score">0</span></div>
+    <!-- SCHERMATA 4: CAMPO DA GIOCO VERTICALE STYLE INAZUMA -->
+    <div id="match-screen" class="screen hidden match-container">
+        <!-- HUD superiore estilo arcade -->
+        <div id="hud-top">
+            <div class="scoreboard-bar">
+                <span class="team-tag" id="home-tag">Tu</span>
+                <span class="score-num" id="home-score">0</span>
+                <span class="score-divider">-</span>
+                <span class="score-num" id="away-score">0</span>
+                <span class="team-tag" id="away-tag">Rivali</span>
+                <div class="match-time-badge" id="match-clock">0:00</div>
+            </div>
+            <button id="btn-pause" class="pause-btn">II</button>
         </div>
 
-        <!-- Canvas del gioco in tempo reale -->
-        <canvas id="gameCanvas" width="700" height="400" style="background: #111; border: 3px solid #FFD700; width: 100%; max-width: 700px; display: block; margin: 0 auto; image-rendering: pixelated;"></canvas>
+        <!-- Canvas di gioco (Campo Verticale) -->
+        <canvas id="gameCanvas" width="360" height="640"></canvas>
 
-        <div id="match-info" style="font-size: 0.6rem; margin-top: 10px; color: #FFD700; min-height: 25px;">
-            Usa i tasti direzionali o WASD per muoverti, SPAZIO per calciare!
-        </div>
+        <!-- Controlli Touch Overlay in Trasparenza (Inazuma Style) -->
+        <div id="touch-overlay">
+            <!-- Joystick analogico virtuale circolare (in basso a sinistra) -->
+            <div id="joystick-zone">
+                <div id="joystick-base">
+                    <div id="joystick-stick"></div>
+                </div>
+            </div>
 
-        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-            <button id="btn-use-card" style="padding: 10px; font-size: 0.6rem;">Usa Carta Speciale</button>
-            <button id="btn-quit-match" style="padding: 10px; font-size: 0.6rem; background-color: #ff4444; color: #fff;">Abbandona</button>
+            <!-- Pulsante Cambio Giocatore (in alto a destra rispetto ai tasti azione) -->
+            <button id="btn-switch-player" class="circle-btn switch-btn">⇄</button>
+
+            <!-- Tasti Azione Circolari (in basso a destra) -->
+            <div id="action-buttons-group">
+                <!-- SET ATTACCO -->
+                <div id="attack-set" class="button-set-radial">
+                    <button id="btn-dribble" class="circle-btn btn-blue pos-dribble">
+                        <span>Dribbling</span>
+                    </button>
+                    <button id="btn-special" class="circle-btn btn-teal pos-special">
+                        <span class="btn-main-txt">Carta / Tecnica</span>
+                        <span class="btn-sub-txt">Special</span>
+                    </button>
+                    <button id="btn-pass" class="circle-btn btn-blue-dark pos-pass">
+                        <span class="btn-main-txt">Passaggio</span>
+                        <span class="btn-sub-txt">tieni premuto</span>
+                    </button>
+                    <button id="btn-shoot" class="circle-btn btn-gold-large pos-shoot">
+                        <span class="btn-main-txt">Tiro</span>
+                        <span class="btn-sub-txt">mantenere</span>
+                    </button>
+                </div>
+
+                <!-- SET DIFESA -->
+                <div id="defense-set" class="button-set-radial hidden">
+                    <button id="btn-press" class="circle-btn btn-blue pos-dribble">
+                        <span>Pressing</span>
+                    </button>
+                    <button id="btn-def-card" class="circle-btn btn-teal pos-special">
+                        <span class="btn-main-txt">Carta</span>
+                        <span class="btn-sub-txt">Special</span>
+                    </button>
+                    <button id="btn-slide" class="circle-btn btn-blue-dark pos-pass">
+                        <span class="btn-main-txt">Scivolata</span>
+                    </button>
+                    <button id="btn-tackle" class="circle-btn btn-gold-large pos-shoot">
+                        <span class="btn-main-txt">Tackle</span>
+                        <span class="btn-sub-txt">intercetta</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -98,13 +148,11 @@
                         <th>Pt</th>
                     </tr>
                 </thead>
-                <tbody id="standings-body">
-                    <!-- Generato via JS -->
-                </tbody>
+                <tbody id="standings-body"></tbody>
             </table>
         </div>
         <div id="controls">
-            <button id="btn-next-round">Torna al Menu / Prossimo Turno</button>
+            <button id="btn-next-round">Menu Principale</button>
         </div>
     </div>
 
