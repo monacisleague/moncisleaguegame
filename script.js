@@ -16,15 +16,14 @@ let currentMinute = 0;
 let matchActive = false;
 let hasBallPossession = true;
 
-// Modalità Presidenziale (Switch via ⇄ su Mobile o TAB su PC)
+// Modalità Presidenziale
 let isPresidentialMode = false;
 let isMobile = false;
 let difficulty = "media";
 
-// Regolamento Monaci's League
 let isDoubleGoalActive = false;
 let isTheWheelActive = false; 
-let matchFormationLevel = 1; // 1 = 1v1 puro, 2 = portiere scala in porta, 4 = 4v4 completo
+let matchFormationLevel = 1;
 
 // CANVAS E CAMPO VERTICALE
 let canvas, ctx;
@@ -40,7 +39,6 @@ let awayGK = { name: "Portiere Rivale", x: 180, y: 65, size: 16, color: '#ffea00
 
 let ball = { x: 180, y: 680, vx: 0, vy: 0, size: 6 };
 
-// Effetti Banner Visivi (GOL!, PARATA!, CONTRASTO)
 let overlayBanner = { text: "", color: "#FFD700", timer: 0 };
 
 let cameraY = 400;
@@ -247,7 +245,7 @@ function useSpecialPower() {
 function triggerBigBanner(text, color = "#FFD700") {
     overlayBanner.text = text;
     overlayBanner.color = color;
-    overlayBanner.timer = 90; // Mostra per ~1.5 secondi
+    overlayBanner.timer = 90;
 }
 
 function triggerAction(action) {
@@ -360,7 +358,6 @@ function updateGame() {
 
     cameraY = player.y - canvas.height / 2;
 
-    // AI Avversario dinamica
     let oppSpeed = opponent.speed;
     if (difficulty === "facile") oppSpeed = 2.0;
     else if (difficulty === "difficile") oppSpeed = 3.2;
@@ -370,7 +367,6 @@ function updateGame() {
     if (opponent.y < ball.y) opponent.y += oppSpeed;
     if (opponent.y > ball.y) opponent.y -= oppSpeed;
 
-    // Portiere Avversario (Difesa Reattiva)
     if (awayGK.active) {
         if (ball.y < 450) {
             if (awayGK.x < ball.x - 5) awayGK.x += 3.0;
@@ -382,13 +378,12 @@ function updateGame() {
 
         let dAwayGK = Math.hypot(awayGK.x - ball.x, awayGK.y - ball.y);
         if (dAwayGK < awayGK.size + ball.size && ball.vy < 0) {
-            ball.vy = 10; // Respinge la palla
+            ball.vy = 10;
             ball.vx = (Math.random() - 0.5) * 8;
             triggerBigBanner("PARATA!", "#00e5ff");
         }
     }
 
-    // Tuo Portiere
     if (homeGK.active) {
         if (ball.y > 550) {
             if (homeGK.x < ball.x - 5) homeGK.x += 3.0;
@@ -424,21 +419,17 @@ function updateGame() {
         else { atk.classList.add('hidden'); def.classList.remove('hidden'); }
     }
 
-    // Fisica Palla
     ball.x += ball.vx; ball.y += ball.vy;
     ball.vx *= 0.93; ball.vy *= 0.93;
 
     let pointsToAdd = isDoubleGoalActive ? 2 : 1;
 
-    // Gol Nord
     if (ball.y < 50 && ball.x > 120 && ball.x < 240) {
         homeScore += pointsToAdd;
         document.getElementById('home-score').textContent = homeScore;
         triggerBigBanner("GOL!", "#FFD700");
         resetPitch();
-    } 
-    // Gol Sud
-    else if (ball.y > 950 && ball.x > 120 && ball.x < 240) {
+    } else if (ball.y > 950 && ball.x > 120 && ball.x < 240) {
         awayScore += pointsToAdd;
         document.getElementById('away-score').textContent = awayScore;
         triggerBigBanner("GOL SUBITO!", "#ff4444");
@@ -454,6 +445,37 @@ function resetPitch() {
     ball.vx = 0; ball.vy = 0;
 }
 
+// Funzione avanzata per disegnare i personaggi in pixel art pulita via codice
+function drawPixelCharacter(ctx, x, y, shirtColor, name) {
+    // Ombra sotto il personaggio
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 10, 8, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Corpo / Maglietta
+    ctx.fillStyle = shirtColor;
+    ctx.fillRect(x - 6, y - 6, 12, 14);
+
+    // Pantaloncini
+    ctx.fillStyle = '#222222';
+    ctx.fillRect(x - 5, y + 8, 10, 6);
+
+    // Testa e Capelli stile anime
+    ctx.fillStyle = '#ffccaa';
+    ctx.fillRect(x - 4, y - 14, 8, 8);
+    ctx.fillStyle = '#553311'; // Capelli
+    ctx.fillRect(x - 5, y - 17, 10, 5);
+
+    // Nome sopra il personaggio
+    if (name) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '6px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(name, x, y - 20);
+    }
+}
+
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -462,18 +484,34 @@ function drawGame() {
     ctx.scale(scale, scale);
     ctx.translate(0, -cameraY);
 
-    for (let i = 0; i < PITCH_HEIGHT; i += 80) {
-        ctx.fillStyle = (i / 80) % 2 === 0 ? '#388e3c' : '#2e7d32';
-        ctx.fillRect(0, i, PITCH_WIDTH, 80);
+    // --- 1. TRIBUNE E BORDO CAMPO STILE VIDEO ---
+    ctx.fillStyle = '#1c1c1c';
+    ctx.fillRect(-50, -50, PITCH_WIDTH + 100, PITCH_HEIGHT + 100);
+
+    // Seggiolini colorati delle tribune in alto e in basso
+    for (let x = 0; x < PITCH_WIDTH; x += 12) {
+        ctx.fillStyle = x % 24 === 0 ? '#ff3d00' : '#00e5ff';
+        ctx.fillRect(x, 0, 12, 35);
+        ctx.fillStyle = x % 24 === 0 ? '#ffb703' : '#3a86ff';
+        ctx.fillRect(x, PITCH_HEIGHT - 35, 12, 35);
     }
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    // --- 2. ERBA DEL CAMPO A STRISCE VERTICALI ---
+    for (let i = 35; i < PITCH_HEIGHT - 35; i += 60) {
+        ctx.fillStyle = (i / 60) % 2 === 0 ? '#388e3c' : '#2e7d32';
+        ctx.fillRect(15, i, PITCH_WIDTH - 30, 60);
+    }
+
+    // --- 3. LINEE DEL CAMPO ---
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
     ctx.lineWidth = 3;
-    ctx.strokeRect(15, 50, PITCH_WIDTH - 30, PITCH_HEIGHT - 100);
+    ctx.strokeRect(15, 35, PITCH_WIDTH - 30, PITCH_HEIGHT - 70);
 
-    ctx.strokeRect(100, 50, 160, 90);
-    ctx.strokeRect(100, PITCH_HEIGHT - 140, 160, 90);
+    // Aree di Rigore
+    ctx.strokeRect(100, 35, 160, 85);
+    ctx.strokeRect(100, PITCH_HEIGHT - 120, 160, 85);
 
+    // Cerchio di Centrocampo
     ctx.beginPath();
     ctx.arc(PITCH_WIDTH / 2, PITCH_HEIGHT / 2, 45, 0, Math.PI * 2);
     ctx.stroke();
@@ -483,107 +521,63 @@ function drawGame() {
     ctx.lineTo(PITCH_WIDTH - 15, PITCH_HEIGHT / 2);
     ctx.stroke();
 
+    // Porte da calcio con rete a griglia stilizzata
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillRect(120, 15, 120, 20);
+    ctx.fillRect(120, PITCH_HEIGHT - 35, 120, 20);
+
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(120, 42, 120, 8);
-    ctx.fillRect(120, PITCH_HEIGHT - 50, 120, 8);
+    ctx.fillRect(120, 32, 120, 5);
+    ctx.fillRect(120, PITCH_HEIGHT - 37, 120, 5);
 
-    // Portieri
+    // --- 4. PORTIERI ---
     if (homeGK.active) {
-        ctx.fillStyle = homeGK.color;
-        ctx.fillRect(homeGK.x - 8, homeGK.y - 8, 16, 16);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '6px monospace';
-        ctx.fillText("GK", homeGK.x, homeGK.y + 14);
+        drawPixelCharacter(ctx, homeGK.x, homeGK.y, '#00e5ff', "GK");
     }
-
     if (awayGK.active) {
-        ctx.fillStyle = awayGK.color;
-        ctx.fillRect(awayGK.x - 8, awayGK.y - 8, 16, 16);
-        ctx.fillText("GK", awayGK.x, awayGK.y - 10);
+        drawPixelCharacter(ctx, awayGK.x, awayGK.y, '#ffea00', "GK");
     }
 
-    // Giocatori
-    ctx.fillStyle = opponent.color;
-    ctx.fillRect(opponent.x - 7, opponent.y - 12, 14, 20);
+    // --- 5. GIOCATORI DI MOVIMENTO ---
+    // Avversario
+    drawPixelCharacter(ctx, opponent.x, opponent.y, '#ff4444', opponent.name);
 
     if (matchFormationLevel >= 4) {
-        ctx.fillStyle = '#ff8a80';
-        ctx.fillRect(opponent.x - 50, opponent.y + 60, 12, 18);
-        ctx.fillRect(opponent.x + 50, opponent.y + 60, 12, 18);
+        drawPixelCharacter(ctx, opponent.x - 50, opponent.y + 60, '#ff8a80', "Bot");
+        drawPixelCharacter(ctx, opponent.x + 50, opponent.y + 60, '#ff8a80', "Bot");
     }
 
-    ctx.fillStyle = '#e65100';
-    ctx.fillRect(player.x - 7, player.y - 12, 14, 20);
+    // Tuo Giocatore Principale (Axel) con cerchio di selezione attorno
+    drawPixelCharacter(ctx, player.x, player.y, '#ff6f00', player.name);
 
-    if (matchFormationLevel >= 4) {
-        ctx.fillStyle = '#ffcc00';
-        ctx.fillRect(player.x - 50, player.y - 60, 12, 18);
-        ctx.fillRect(player.x + 50, player.y - 60, 12, 18);
-    }
-
-    ctx.strokeStyle = '#ff6f00';
+    ctx.strokeStyle = '#00ffcc';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(player.x, player.y + 6, 12, 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, 16, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = '#ff3d00';
+    if (matchFormationLevel >= 4) {
+        drawPixelCharacter(ctx, player.x - 50, player.y - 60, '#ffcc00', "Compagno");
+        drawPixelCharacter(ctx, player.x + 50, player.y - 60, '#ffcc00', "Compagno");
+    }
+
+    // --- 6. PALLA ---
+    ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.moveTo(player.x - 4, player.y - 22);
-    ctx.lineTo(player.x + 4, player.y - 22);
-    ctx.lineTo(player.x, player.y - 16);
+    ctx.arc(ball.x + 1, ball.y + 1, ball.size, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '7px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(player.name, player.x, player.y + 24);
-
-    // Palla
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
     ctx.fill();
 
-    // BANNER ANIMATO A SCHERMO (GOL!, PARATA!, DRIBBLING!)
+    // --- 7. BANNER ANIMATO A SCHERMO ---
     if (overlayBanner.timer > 0) {
         overlayBanner.timer--;
         ctx.fillStyle = overlayBanner.color;
-        ctx.font = 'bold 22px "Press Start 2P", monospace';
+        ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
         ctx.shadowColor = "#000000";
-        ctx.shadowBlur = 8;
-        ctx.fillText(overlayBanner.text, PITCH_WIDTH / 2, cameraY + canvas.height / (2 * scale) - 50);
-        ctx.shadowBlur = 0;
-    }
-
-    ctx.restore();
-}
-
-function endMatchSequence() {
-    let pObj = teamsList.find(t => t.name === playerTeamName);
-    let oObj = teamsList.find(t => t.name === opponentTeamName);
-
-    if (homeScore > awayScore) {
-        if (pObj) pObj.points += 3;
-    } else if (homeScore < awayScore) {
-        if (oObj) oObj.points += 3;
-    } else {
-        if (pObj) pObj.points += 1;
-        if (oObj) oObj.points += 1;
-    }
-
-    teamsList.sort((a, b) => b.points - a.points);
-
-    const tbody = document.getElementById('standings-body');
-    if (tbody) {
-        tbody.innerHTML = "";
-        teamsList.forEach((t, i) => {
-            let row = document.createElement('tr');
-            row.innerHTML = `<td>${i + 1}°</td><td>${t.name}</td><td>${t.points}</td>`;
-            tbody.appendChild(row);
-        });
-    }
-    showScreen('standings-screen');
-    }
-                
+        ctx.shadowBlur = 10;
+        ctx.fillText(overlayBanner.text, PITCH_WIDTH / 2
