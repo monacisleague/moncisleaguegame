@@ -39,28 +39,14 @@ h1, h2 {
     text-shadow: 3px 3px #000000;
 }
 
-h1 { font-size: 1.6rem; }
-h2 { font-size: 1.2rem; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.1rem; }
 
 p {
     color: #FFD700;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     line-height: 1.6;
     margin-bottom: 20px;
-}
-
-#scoreboard {
-    font-size: 1rem;
-    background: #000;
-    border: 2px solid #FFD700;
-    padding: 10px;
-    margin-bottom: 10px;
-}
-
-#clock-display {
-    font-size: 0.8rem;
-    color: #00ffcc;
-    margin-bottom: 15px;
 }
 
 #menu-buttons, #controls {
@@ -94,7 +80,7 @@ button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #ffffff;
 }
 
 .settings-group h3 {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #FFD700;
     margin-bottom: 8px;
     border-bottom: 1px solid #FFD700;
