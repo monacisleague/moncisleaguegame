@@ -1,4 +1,4 @@
-// Dati della Lega
+// Dati della Lega e delle Squadre
 const teamsList = [
     { name: "Monaci FC", points: 0 },
     { name: "Lightning Eleven", points: 0 },
@@ -16,17 +16,30 @@ let currentMinute = 0;
 let matchActive = false;
 let hasBallPossession = true;
 
-// Modalità Tasto Speciale: false = Carta Speciale, true = Rigore Presidenziale
+// Modalità Tasto Speciale
 let isPresidentialMode = false;
 let isMobile = false;
+let difficulty = "media";
+
+// Regolamento Ufficiale
+let isDoubleGoalActive = false;
+let isTheWheelActive = false; 
+let matchFormationLevel = 1; // 1 = 1v1 puro in mezzo, 2 = si aggiunge il portiere dietro, 4 = 4v4 completo
 
 // CANVAS E CAMPO VERTICALE
 let canvas, ctx;
 const PITCH_WIDTH = 360;
 const PITCH_HEIGHT = 1000;
 
+// Giocatore Principale (Axel - In mezzo)
 let player = { name: "Axel", x: 180, y: 700, size: 14, speed: 3.2, color: '#ffffff' };
+// Avversario Principale (Mark - In mezzo)
 let opponent = { name: "Mark", x: 180, y: 300, size: 14, speed: 2.2, color: '#ff4444' };
+
+// Portieri (Entrano in porta scalando dalla manovra quando scatta il minuto)
+let homeGK = { name: "Tuon Portiere", x: 180, y: 935, size: 15, color: '#00e5ff', active: false };
+let awayGK = { name: "Portiere Rivale", x: 180, y: 65, size: 15, color: '#ffea00', active: false };
+
 let ball = { x: 180, y: 680, vx: 0, vy: 0, size: 6 };
 
 let cameraY = 400;
@@ -39,7 +52,6 @@ function showScreen(screenId) {
     if (target) target.classList.remove('hidden');
 }
 
-// Rileva se l'utente è su telefono o PC
 function detectDevice() {
     const deviceChoice = document.getElementById('control-device')?.value;
     if (deviceChoice === 'pc') {
@@ -65,17 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     detectDevice();
 
-    // Tastiera PC Avanzata
     window.addEventListener('keydown', e => {
         keys[e.code] = true;
-
-        // Tasto TAB per switchare la Carta/Rigore Presidenziale su PC
         if (e.code === 'Tab') {
             e.preventDefault();
             toggleSpecialButtonMode();
         }
-
-        // Tasto Q per attivare la Carta o il Rigore su PC
         if (e.code === 'KeyQ') {
             e.preventDefault();
             useSpecialPower();
@@ -103,12 +110,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-launch-match').addEventListener('click', () => {
         detectDevice();
         playerTeamName = document.getElementById('team-choice').value;
+        difficulty = document.getElementById('difficulty-choice')?.value || "media";
+
         let available = teamsList.filter(t => t.name !== playerTeamName);
         opponentTeamName = available[Math.floor(Math.random() * available.length)].name;
 
         document.getElementById('home-tag').textContent = playerTeamName.substring(0, 3);
         document.getElementById('away-tag').textContent = opponentTeamName.substring(0, 3);
+        
         homeScore = 0; awayScore = 0; currentMinute = 0;
+        isDoubleGoalActive = false;
+        isTheWheelActive = false;
+        matchFormationLevel = 1;
+        homeGK.active = false;
+        awayGK.active = false;
+
         document.getElementById('home-score').textContent = homeScore;
         document.getElementById('away-score').textContent = awayScore;
 
@@ -188,10 +204,8 @@ function setupTouchButtons() {
     document.getElementById('btn-press')?.addEventListener('touchstart', (e) => { e.preventDefault(); triggerAction('press'); });
 }
 
-// Toggle tra Carta Speciale e Rigore Presidenziale (vale sia per Mobile ⇄ sia per PC TAB)
 function toggleSpecialButtonMode() {
     isPresidentialMode = !isPresidentialMode;
-
     const btnSpecials = document.querySelectorAll('.pos-special');
     const pcText = document.getElementById('pc-mode-text');
 
@@ -220,12 +234,12 @@ function useSpecialPower() {
     if (!matchActive) return;
 
     if (isPresidentialMode) {
-        alert("RIGORE PRESIDENZIALE! Palla sul dischetto!");
+        showMatchNotice("⚠️ RIGORE PRESIDENZIALE ATTIVATO!");
         ball.x = PITCH_WIDTH / 2;
-        ball.y = 200;
-        ball.vx = 0; ball.vy = -10;
+        ball.y = 250;
+        ball.vx = 0; ball.vy = -12;
     } else {
-        alert("CARTA SPECIALE ACTIVATED!");
+        showMatchNotice("🌟 CARTA SPECIALE DEL PRESIDENTE!");
     }
 }
 
@@ -233,34 +247,79 @@ function triggerAction(action) {
     if (!matchActive) return;
 
     if (action === 'shoot' && hasBallPossession) {
-        ball.vy = -12;
+        let powerMultiplier = isDoubleGoalActive ? 1.5 : 1.2;
+        ball.vy = -12 * powerMultiplier;
         ball.vx = (Math.random() - 0.5) * 4;
     } else if (action === 'pass' && hasBallPossession) {
         ball.vy = -7;
     } else if (action === 'dribble') {
-        player.y -= 25;
+        player.y -= 30;
     } else if (action === 'tackle') {
         player.y = ball.y; player.x = ball.x;
     }
 }
 
+function showMatchNotice(text) {
+    let hud = document.getElementById('match-clock');
+    if (hud) {
+        hud.textContent = text;
+        hud.style.color = "#ff3d00";
+        setTimeout(() => {
+            hud.style.color = "#00ffcc";
+        }, 3000);
+    }
+}
+
 function startMatchEngine() {
     matchActive = true;
-    player.x = PITCH_WIDTH / 2; player.y = 750;
-    opponent.x = PITCH_WIDTH / 2; opponent.y = 250;
+    player.x = PITCH_WIDTH / 2; player.y = 700;
+    opponent.x = PITCH_WIDTH / 2; opponent.y = 300;
+    homeGK.x = PITCH_WIDTH / 2; awayGK.x = PITCH_WIDTH / 2;
     ball.x = player.x; ball.y = player.y - 12;
 
     let timer = setInterval(() => {
         if (!matchActive) { clearInterval(timer); return; }
         currentMinute += 1;
+        
         let mStr = Math.floor(currentMinute / 2);
         let sStr = (currentMinute % 2) * 30;
-        document.getElementById('match-clock').textContent = `${mStr}:${sStr === 0 ? '00' : sStr}`;
+        document.getElementById('match-clock').textContent = `${mStr}:${sStr === 0 ? '00' : sStr} (${currentMinute}')`;
+
+        // Ingresso Scalato: Al minuto 2 entra il portiere (uno scala in porta)
+        if (currentMinute === 2) {
+            matchFormationLevel = 2;
+            homeGK.active = true;
+            awayGK.active = true;
+            showMatchNotice("🧤 Ingresso Scalato: Un giocatore scala in porta a fare il Portiere!");
+        } 
+        // Al minuto 4 si completa la formazione 4v4 in mezzo
+        else if (currentMinute === 4) {
+            matchFormationLevel = 4;
+            showMatchNotice("⚡ Ingresso Scalato: Formazione 4v4 COMPLETA in mezzo al campo!");
+        }
+
+        if (currentMinute === 17) {
+            isDoubleGoalActive = true;
+            showMatchNotice("⚡ MINUTO 17': GOL DOPPIO ATTIVO!");
+        }
+
+        if (currentMinute === 20) {
+            isTheWheelActive = true;
+            showMatchNotice("🎡 LA RUOTA: 1v1 Porta a Porta!");
+        } else if (currentMinute === 23) {
+            isTheWheelActive = false;
+            showMatchNotice("🏁 Fine La Ruota: Torna il match regolare!");
+        }
 
         if (currentMinute >= 36) {
             clearInterval(timer);
             matchActive = false;
-            endMatchSequence();
+            if (homeScore === awayScore) {
+                showMatchNotice("⚽ PARITÀ! SUPERSHOOTOUT 5 SECONDI!");
+                setTimeout(() => endMatchSequence(), 3000);
+            } else {
+                endMatchSequence();
+            }
         }
     }, 2000);
 
@@ -278,26 +337,18 @@ function updateGame() {
     let mx = joystickVector.x;
     let my = joystickVector.y;
 
-    // Controlli Tastiera PC
     if (keys['KeyW'] || keys['ArrowUp']) my = -1;
     if (keys['KeyS'] || keys['ArrowDown']) my = 1;
     if (keys['KeyA'] || keys['ArrowLeft']) mx = -1;
     if (keys['KeyD'] || keys['ArrowRight']) mx = 1;
 
-    // Azioni Tastiera PC (Spazio / J = Tiro/Tackle, K = Passaggio, L = Dribbling)
     if (keys['Space'] || keys['KeyJ']) {
         if (hasBallPossession) triggerAction('shoot');
         else triggerAction('tackle');
         keys['Space'] = false; keys['KeyJ'] = false;
     }
-    if (keys['KeyK']) {
-        triggerAction('pass');
-        keys['KeyK'] = false;
-    }
-    if (keys['KeyL']) {
-        triggerAction('dribble');
-        keys['KeyL'] = false;
-    }
+    if (keys['KeyK']) { triggerAction('pass'); keys['KeyK'] = false; }
+    if (keys['KeyL']) { triggerAction('dribble'); keys['KeyL'] = false; }
 
     player.x += mx * player.speed;
     player.y += my * player.speed;
@@ -307,10 +358,48 @@ function updateGame() {
 
     cameraY = player.y - canvas.height / 2;
 
-    if (opponent.x < ball.x) opponent.x += opponent.speed;
-    if (opponent.x > ball.x) opponent.x -= opponent.speed;
-    if (opponent.y < ball.y) opponent.y += opponent.speed;
-    if (opponent.y > ball.y) opponent.y -= opponent.speed;
+    // AI Giocatore in mezzo
+    let oppSpeed = opponent.speed;
+    if (difficulty === "facile") oppSpeed = 1.8;
+    else if (difficulty === "difficile") oppSpeed = 3.0;
+
+    if (opponent.x < ball.x) opponent.x += oppSpeed;
+    if (opponent.x > ball.x) opponent.x -= oppSpeed;
+    if (opponent.y < ball.y) opponent.y += oppSpeed;
+    if (opponent.y > ball.y) opponent.y -= oppSpeed;
+
+    // Movimento Portieri (Solo se attivi dal min 2')
+    if (awayGK.active) {
+        if (ball.y < 450) {
+            if (awayGK.x < ball.x - 5) awayGK.x += 2.5;
+            else if (awayGK.x > ball.x + 5) awayGK.x -= 2.5;
+        } else {
+            awayGK.x += (PITCH_WIDTH / 2 - awayGK.x) * 0.05;
+        }
+        awayGK.x = Math.max(130, Math.min(230, awayGK.x));
+
+        let dAwayGK = Math.hypot(awayGK.x - ball.x, awayGK.y - ball.y);
+        if (dAwayGK < awayGK.size + ball.size) {
+            ball.vy = 8;
+            showMatchNotice("🧤 PARATA DEL PORTIERE RIVALE!");
+        }
+    }
+
+    if (homeGK.active) {
+        if (ball.y > 550) {
+            if (homeGK.x < ball.x - 5) homeGK.x += 2.5;
+            else if (homeGK.x > ball.x + 5) homeGK.x -= 2.5;
+        } else {
+            homeGK.x += (PITCH_WIDTH / 2 - homeGK.x) * 0.05;
+        }
+        homeGK.x = Math.max(130, Math.min(230, homeGK.x));
+
+        let dHomeGK = Math.hypot(homeGK.x - ball.x, homeGK.y - ball.y);
+        if (dHomeGK < homeGK.size + ball.size) {
+            ball.vy = -8;
+            showMatchNotice("🧤 PARATA DEL TUO PORTIERE!");
+        }
+    }
 
     let dPlayer = Math.hypot(player.x - ball.x, player.y - ball.y);
     let dOpponent = Math.hypot(opponent.x - ball.x, opponent.y - ball.y);
@@ -335,20 +424,25 @@ function updateGame() {
     ball.x += ball.vx; ball.y += ball.vy;
     ball.vx *= 0.94; ball.vy *= 0.94;
 
-    if (ball.y < 60 && ball.x > 120 && ball.x < 240) {
-        homeScore++;
+    let pointsToAdd = isDoubleGoalActive ? 2 : 1;
+
+    if (ball.y < 50 && ball.x > 120 && ball.x < 240) {
+        homeScore += pointsToAdd;
         document.getElementById('home-score').textContent = homeScore;
+        showMatchNotice(`⚽ GOL! +${pointsToAdd} per ${playerTeamName}`);
         resetPitch();
-    } else if (ball.y > 940 && ball.x > 120 && ball.x < 240) {
-        awayScore++;
+    } else if (ball.y > 950 && ball.x > 120 && ball.x < 240) {
+        awayScore += pointsToAdd;
         document.getElementById('away-score').textContent = awayScore;
+        showMatchNotice(`⚽ GOL AVVERSARIO! +${pointsToAdd}`);
         resetPitch();
     }
 }
 
 function resetPitch() {
-    player.x = PITCH_WIDTH / 2; player.y = 750;
-    opponent.x = PITCH_WIDTH / 2; opponent.y = 250;
+    player.x = PITCH_WIDTH / 2; player.y = 700;
+    opponent.x = PITCH_WIDTH / 2; opponent.y = 300;
+    homeGK.x = PITCH_WIDTH / 2; awayGK.x = PITCH_WIDTH / 2;
     ball.x = player.x; ball.y = player.y - 10;
     ball.vx = 0; ball.vy = 0;
 }
@@ -370,6 +464,9 @@ function drawGame() {
     ctx.lineWidth = 3;
     ctx.strokeRect(15, 50, PITCH_WIDTH - 30, PITCH_HEIGHT - 100);
 
+    ctx.strokeRect(100, 50, 160, 90);
+    ctx.strokeRect(100, PITCH_HEIGHT - 140, 160, 90);
+
     ctx.beginPath();
     ctx.arc(PITCH_WIDTH / 2, PITCH_HEIGHT / 2, 45, 0, Math.PI * 2);
     ctx.stroke();
@@ -380,14 +477,42 @@ function drawGame() {
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(120, 45, 120, 8);
-    ctx.fillRect(120, PITCH_HEIGHT - 53, 120, 8);
+    ctx.fillRect(120, 42, 120, 8);
+    ctx.fillRect(120, PITCH_HEIGHT - 50, 120, 8);
 
+    // --- PORTIERI (Compaiono solo quando scalano in porta dal min 2') ---
+    if (homeGK.active) {
+        ctx.fillStyle = homeGK.color;
+        ctx.fillRect(homeGK.x - 8, homeGK.y - 8, 16, 16);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '6px monospace';
+        ctx.fillText("GK", homeGK.x, homeGK.y + 14);
+    }
+
+    if (awayGK.active) {
+        ctx.fillStyle = awayGK.color;
+        ctx.fillRect(awayGK.x - 8, awayGK.y - 8, 16, 16);
+        ctx.fillText("GK", awayGK.x, awayGK.y - 10);
+    }
+
+    // --- GIOCATORI DI MOVIMENTO IN MEZZO ---
     ctx.fillStyle = opponent.color;
     ctx.fillRect(opponent.x - 7, opponent.y - 12, 14, 20);
 
+    if (matchFormationLevel >= 4) {
+        ctx.fillStyle = '#ff8a80';
+        ctx.fillRect(opponent.x - 50, opponent.y + 60, 12, 18);
+        ctx.fillRect(opponent.x + 50, opponent.y + 60, 12, 18);
+    }
+
     ctx.fillStyle = '#e65100';
     ctx.fillRect(player.x - 7, player.y - 12, 14, 20);
+
+    if (matchFormationLevel >= 4) {
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(player.x - 50, player.y - 60, 12, 18);
+        ctx.fillRect(player.x + 50, player.y - 60, 12, 18);
+    }
 
     ctx.strokeStyle = '#ff6f00';
     ctx.lineWidth = 2;
@@ -417,7 +542,17 @@ function drawGame() {
 
 function endMatchSequence() {
     let pObj = teamsList.find(t => t.name === playerTeamName);
-    if (homeScore > awayScore && pObj) pObj.points += 3;
+    let oObj = teamsList.find(t => t.name === opponentTeamName);
+
+    if (homeScore > awayScore) {
+        if (pObj) pObj.points += 3;
+    } else if (homeScore < awayScore) {
+        if (oObj) oObj.points += 3;
+    } else {
+        if (pObj) pObj.points += 1;
+        if (oObj) oObj.points += 1;
+    }
+
     teamsList.sort((a, b) => b.points - a.points);
 
     const tbody = document.getElementById('standings-body');
@@ -430,4 +565,5 @@ function endMatchSequence() {
         });
     }
     showScreen('standings-screen');
-}
+                            }
+        
