@@ -64,7 +64,7 @@ const gameState = {
     }
 };
 
-// --- GESTIONE SICURA IMMAGINE CAMPO (FASE 3) ---
+// --- GESTIONE IMMAGINE CAMPO VERTICALE (FASE 3) ---
 const pitchImage = new Image();
 pitchImage.src = 'pitch.png';
 let pitchLoaded = false;
@@ -73,24 +73,28 @@ pitchImage.onload = () => {
     pitchLoaded = true;
 };
 
-// Funzione di disegno campo con fallback
+// Funzione di disegno con campo verticale 400x600 e fallback
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (pitchLoaded) {
+        // Disegna l'immagine verticale nativa riempiendo esattamente il canvas 400x600
         ctx.drawImage(pitchImage, 0, 0, canvas.width, canvas.height);
     } else {
+        // Fallback di riserva in stile campo verticale retrò
         ctx.fillStyle = '#0a7527';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 3;
         
+        // Linea di metà campo orizzontale per campo verticale
         ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, 0);
-        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.moveTo(0, canvas.height / 2);
+        ctx.lineTo(canvas.width, canvas.height / 2);
         ctx.stroke();
 
+        // Cerchio di centrocampo
         ctx.beginPath();
         ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
         ctx.stroke();
@@ -98,7 +102,7 @@ function drawGame() {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.font = '10px "Press Start 2P"';
         ctx.textAlign = 'center';
-        ctx.fillText("CAMPO DI GIOCO PRONTO", canvas.width / 2, canvas.height / 2 + 80);
+        ctx.fillText("CAMPO VERTICALE PRONTO", canvas.width / 2, canvas.height / 2 + 80);
     }
 }
 
@@ -117,10 +121,8 @@ function updateTeamDisplay() {
     teamCounter.textContent = `${currentTeamIndex + 1} / ${teamsList.length}`;
     gameState.selectedTeam = team.name;
 
-    // Gestione intelligente del logo: se il file non esiste su GitHub, mostra uno stemma di riserva colorato
     currentTeamLogo.src = team.logo;
     currentTeamLogo.onerror = () => {
-        // Fallback visivo se il file logo.png non viene trovato (evita schermate vuote o loghi errati)
         currentTeamLogo.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='50'><rect width='50' height='50' fill='%23111' stroke='%23ffd700' stroke-width='3'/><text x='25' y='30' font-size='16' text-anchor='middle' fill='%23ffd700' font-family='sans-serif'>⚽</text></svg>";
     };
 }
