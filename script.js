@@ -137,10 +137,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// RESIZE RISOLTO PER CORREGGERE LO SCHIACCIAMENTO SU PC
 function resizeCanvas() {
     if(!canvas) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Manteniamo una risoluzione fissa verticale del canvas così non si stira orizzontalmente
+    canvas.width = 360;
+    canvas.height = 700; // Visuale ottimale ravvicinata
 }
 window.addEventListener('resize', resizeCanvas);
 
@@ -360,6 +362,7 @@ function updateGame() {
     player.x = Math.max(20, Math.min(PITCH_WIDTH - 20, player.x));
     player.y = Math.max(50, Math.min(PITCH_HEIGHT - 50, player.y));
 
+    // Mantiene la telecamera puntata sul giocatore con inquadratura dinamica
     cameraY = player.y - canvas.height / 2;
 
     let oppSpeed = opponent.speed;
@@ -444,7 +447,8 @@ function updateGame() {
 function resetPitch() {
     player.x = PITCH_WIDTH / 2; player.y = 700;
     opponent.x = PITCH_WIDTH / 2; opponent.y = 300;
-    homeGK.x = PITCH_WIDTH / 2; awayGK.x = PITCH_WIDTH / 2;
+    homeGK.x = PITCH_WIDTH / 2; homeGK.y = 935;
+    awayGK.x = PITCH_WIDTH / 2; awayGK.y = 65;
     ball.x = player.x; ball.y = player.y - 10;
     ball.vx = 0; ball.vy = 0;
 }
@@ -457,20 +461,28 @@ function drawGame() {
     ctx.scale(scale, scale);
     ctx.translate(0, -cameraY);
 
-    // Disegno dello stadio ritagliato dallo sprite sheet caricato
+    // 1. Prato di sfondo sempre presente
+    for (let i = 0; i < PITCH_HEIGHT; i += 80) {
+        ctx.fillStyle = (i / 80) % 2 === 0 ? '#388e3c' : '#2e7d32';
+        ctx.fillRect(0, i, PITCH_WIDTH, 80);
+    }
+
+    // 2. Disegno dello Stadio dall'immagine stadium_sheet.png
     if (stadiumImage.complete && stadiumImage.naturalWidth !== 0) {
-        // Ritaglia la sezione dello stadio in alto a sinistra (coordinate del tuo file)
         ctx.drawImage(stadiumImage, 15, 30, 450, 335, 0, 0, PITCH_WIDTH, PITCH_HEIGHT);
     } else {
-        // Fallback di sicurezza se l'immagine non è ancora pronta
-        ctx.fillStyle = '#2e7d32';
-        ctx.fillRect(0, 0, PITCH_WIDTH, PITCH_HEIGHT);
+        // Linee di campo di emergenza se l'immagine non è caricata
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(15, 50, PITCH_WIDTH - 30, PITCH_HEIGHT - 100);
+        ctx.beginPath();
+        ctx.arc(PITCH_WIDTH / 2, PITCH_HEIGHT / 2, 45, 0, Math.PI * 2);
+        ctx.stroke();
     }
 
     // Portieri
     if (homeGK.active) {
         if (stadiumImage.complete && stadiumImage.naturalWidth !== 0) {
-            // Esempio ritaglio omino portiere dal foglio
             ctx.drawImage(stadiumImage, 580, 40, 16, 24, homeGK.x - 8, homeGK.y - 12, 16, 24);
         } else {
             ctx.fillStyle = '#00e5ff';
@@ -489,10 +501,7 @@ function drawGame() {
 
     // Giocatori
     if (stadiumImage.complete && stadiumImage.naturalWidth !== 0) {
-        // Avversario (es. maglia rossa)
         ctx.drawImage(stadiumImage, 510, 100, 16, 24, opponent.x - 8, opponent.y - 12, 16, 24);
-        
-        // Tuo giocatore (es. maglia blu/verde)
         ctx.drawImage(stadiumImage, 510, 40, 16, 24, player.x - 8, player.y - 12, 16, 24);
     } else {
         ctx.fillStyle = '#ff4444';
@@ -501,16 +510,15 @@ function drawGame() {
         ctx.fillRect(player.x - 7, player.y - 12, 14, 20);
     }
 
-    // Cerchio di selezione sul tuo giocatore
+    // Cerchio di selezione e nome
     ctx.strokeStyle = '#00ffcc';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(player.x, player.y, 16, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Nome del tuo giocatore
     ctx.fillStyle = '#ffffff';
-    ctx.font = '7px monospace';
+    ctx.font = '8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(player.name, player.x, player.y + 18);
 
@@ -520,7 +528,7 @@ function drawGame() {
     ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
     ctx.fill();
 
-    // Banner animato (GOL!, PARATA!, ecc.)
+    // Banner animato
     if (overlayBanner.timer > 0) {
         overlayBanner.timer--;
         ctx.fillStyle = overlayBanner.color;
@@ -560,5 +568,4 @@ function endMatchSequence() {
         });
     }
     showScreen('standings-screen');
-        }
-                
+}
