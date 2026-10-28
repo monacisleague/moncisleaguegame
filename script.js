@@ -67,43 +67,13 @@ const gameState = {
 // --- GESTIONE IMMAGINE CAMPO VERTICALE (FASE 3) ---
 const pitchImage = new Image();
 pitchImage.src = 'pitch.png';
-let pitchLoaded = false;
 
-pitchImage.onload = () => {
-    pitchLoaded = true;
-};
-
-// Funzione di disegno con campo verticale 400x600 e fallback
+// Funzione di disegno: disegna direttamente l'immagine dello stadio sul canvas verticale 400x600
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (pitchLoaded) {
-        // Disegna l'immagine verticale nativa riempiendo esattamente il canvas 400x600
-        ctx.drawImage(pitchImage, 0, 0, canvas.width, canvas.height);
-    } else {
-        // Fallback di riserva in stile campo verticale retrò
-        ctx.fillStyle = '#0a7527';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-        
-        // Linea di metà campo orizzontale per campo verticale
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height / 2);
-        ctx.lineTo(canvas.width, canvas.height / 2);
-        ctx.stroke();
-
-        // Cerchio di centrocampo
-        ctx.beginPath();
-        ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.font = '10px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.fillText("CAMPO VERTICALE PRONTO", canvas.width / 2, canvas.height / 2 + 80);
-    }
+    // Disegna l'immagine di sfondo dello stadio verticalmente
+    ctx.drawImage(pitchImage, 0, 0, canvas.width, canvas.height);
 }
 
 function gameLoop() {
