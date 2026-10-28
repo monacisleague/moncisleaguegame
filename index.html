@@ -2,130 +2,297 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monaci's League</title>
-    <!-- Font Pixel Art da Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>FC POLAR - Arcade Soccer</title>
+    <style>
+        /* --- STILE BLACK AND GOLD ORIGINALE --- */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0c0c0c;
+            color: #ffd700;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #shell {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background-color: #000000;
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1, h2 {
+            margin: 0;
+            text-align: center;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px #332200;
+        }
+
+        /* Pulsanti Stile Arcade Black & Gold */
+        .arcade-btn {
+            background-color: #1a1a1a;
+            color: #ffd700;
+            border: 3px solid #ffd700;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 4px 0 #b39700;
+            transition: all 0.1s ease;
+            width: 80%;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .arcade-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #b39700;
+        }
+
+        /* Schermata Menu Principale */
+        #main-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Schermata Selezione Squadre (Caroselli) */
+        #team-select-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+        }
+
+        .carousel-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #141414;
+            border: 2px solid #ffd700;
+            width: 100%;
+            padding: 10px;
+            box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+
+        .carousel-btn {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            font-weight: bold;
+            font-size: 20px;
+            padding: 5px 15px;
+            cursor: pointer;
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .team-logo {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #ffd700;
+            background: #222;
+        }
+
+        /* Schermata Gameplay */
+        #gameplay-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+            width: 100%;
+        }
+
+        #game-canvas {
+            background-color: #1b5e20;
+            border: 3px solid #ffd700;
+        }
+
+        /* Controlli Tattili e HUD su schermo (Gestiti da controls.js) */
+        #touch {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .pc #touch, .pc #pad, .pc #stick {
+            display: none !important;
+        }
+
+        #stick {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            background: rgba(255, 215, 0, 0.1);
+            transform: translate(-50%, -50%);
+            display: none;
+            pointer-events: none;
+        }
+        #stick.live { display: block; }
+        #knob {
+            position: absolute;
+            top: 20px; left: 20px;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: #ffd700;
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+        #pad {
+            position: absolute;
+            bottom: 20px; right: 20px;
+            pointer-events: auto;
+        }
+        .act {
+            position: absolute;
+            background: #1a1a1a;
+            border: 2px solid #ffd700;
+            color: #ffd700;
+            font-weight: bold;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .act.down { background: #ffd700; color: #000; }
+
+        #keyhud {
+            font-size: 11px;
+            text-align: center;
+            color: #b39700;
+            margin-top: 5px;
+        }
+
+        /* Modale Impostazioni */
+        #settings-modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .setting-row {
+            margin: 15px 0;
+            text-align: center;
+            width: 80%;
+        }
+    </style>
 </head>
 <body>
 
-    <!-- FASE 1: SCHERMATA PRINCIPALE (MENU) -->
-    <div id="main-menu" class="screen">
-        <header class="league-header">
-            <img src="logo.png" alt="Logo Monaci's League" class="game-logo">
-            <h1 class="gold-text">MONACI'S LEAGUE</h1>
-        </header>
-
-        <div class="menu-buttons">
-            <button id="btn-play" class="btn-gold">GIOCA</button>
-            <button id="btn-settings" class="btn-gold">IMPOSTAZIONI</button>
+    <div id="shell">
+        <!-- ZONA JOYSTICK E TASTI TOUCH -->
+        <div id="touch">
+            <div id="stick" class="rest"><div id="knob"></div></div>
+            <div id="pad"></div>
         </div>
-    </div>
 
-    <!-- FASE 2: SCHERMATA SELEZIONE SQUADRA E DIFFICOLTÀ CON CAROSELLI -->
-    <div id="team-select-screen" class="screen hidden">
-        <h1 class="gold-text">PREPARAZIONE PARTITA</h1>
+        <!-- 1. MENU PRINCIPALE -->
+        <div id="main-menu">
+            <h1>FC POLAR</h1>
+            <p style="font-size: 12px; color: #b39700; margin-bottom: 30px;">ARCADE SOCCER EDITION</p>
+            <button class="arcade-btn" id="btn-play">GIOCA</button>
+            <button class="arcade-btn" id="btn-settings">IMPOSTAZIONI</button>
+        </div>
 
-        <!-- Sezione Selezione Squadra tramite Carosello -->
-        <div class="selection-section">
-            <h2 class="gold-subheading">SCEGLI LA TUA SQUADRA</h2>
-            
-            <div class="carousel-container">
-                <button id="btn-prev-team" class="btn-arrow">◀</button>
-                <div class="team-display-box" id="team-box-border">
-                    <img id="current-team-logo" src="" alt="Logo Squadra" class="team-carousel-logo">
-                    <span id="current-team-name" class="team-carousel-name">SQUADRA</span>
+        <!-- 2. SELEZIONE SQUADRA E DIFFICOLTÀ -->
+        <div id="team-select-screen" class="hidden">
+            <h2>SCEGLI SQUADRA</h2>
+            <div class="carousel-box" id="team-box-border">
+                <button class="carousel-btn" id="btn-prev-team">&lt;</button>
+                <div class="team-info">
+                    <img id="current-team-logo" class="team-logo" src="" alt="Logo">
+                    <span id="current-team-name" style="font-size: 18px; font-weight: bold;">FC POLAR</span>
                 </div>
-                <button id="btn-next-team" class="btn-arrow">▶</button>
+                <button class="carousel-btn" id="btn-next-team">&gt;</button>
             </div>
-            <p id="team-counter" class="team-counter-text">1 / 6</p>
-        </div>
+            <div style="font-size: 12px;" id="team-counter">1 / 6</div>
 
-        <!-- Sezione Selezione Difficoltà tramite Carosello -->
-        <div class="selection-section">
-            <h2 class="gold-subheading">DIFFICOLTÀ</h2>
-            
-            <div class="carousel-container">
-                <button id="btn-prev-diff" class="btn-arrow">◀</button>
-                <div class="team-display-box diff-display-box">
-                    <span id="current-diff-name" class="team-carousel-name diff-name-text">MEDIO</span>
-                </div>
-                <button id="btn-next-diff" class="btn-arrow">▶</button>
+            <h2>DIFFICOLTÀ</h2>
+            <div class="carousel-box">
+                <button class="carousel-btn" id="btn-prev-diff">&lt;</button>
+                <span id="current-diff-name" style="font-size: 18px; font-weight: bold; width: 100%; text-align: center;">MEDIO</span>
+                <button class="carousel-btn" id="btn-next-diff">&gt;</button>
             </div>
-            <p id="diff-counter" class="team-counter-text">2 / 3</p>
+            <div style="font-size: 12px;" id="diff-counter">2 / 3</div>
+
+            <button class="arcade-btn" id="btn-start-match">INIZIA PARTITA</button>
+            <button class="arcade-btn" id="btn-back-to-menu" style="background: #331111; border-color: #ff4444; color: #ff4444; box-shadow: 0 4px 0 #990000;">INDIETRO</button>
         </div>
 
-        <!-- Pulsanti di Azione -->
-        <div class="action-buttons">
-            <button id="btn-start-match" class="btn-gold">AVVIA PARTITA</button>
-            <button id="btn-back-to-menu" class="btn-gold">INDIETRO</button>
+        <!-- 3. GAMEPLAY (CAMPO E PARTITA) -->
+        <div id="gameplay-screen" class="hidden">
+            <div id="match-info" style="font-size: 14px; font-weight: bold;">FC POLAR | MEDIO</div>
+            
+            <canvas id="game-canvas" width="340" height="420"></canvas>
+            
+            <div id="keyhud"><span class="kh-keys"></span></div>
+
+            <button class="arcade-btn" id="btn-back-to-select" style="font-size: 12px; padding: 8px; width: 60%;">ABBANDONA PARTITA</button>
         </div>
-    </div>
 
-    <!-- FASE 1: MODALE IMPOSTAZIONI -->
-    <div id="settings-modal" class="modal hidden">
-        <div class="modal-content">
-            <h2 class="gold-text">IMPOSTAZIONI</h2>
-
-            <section class="settings-group">
-                <h3 class="gold-text">AUDIO</h3>
-                <div class="setting-item">
-                    <label for="music-volume">Musica:</label>
-                    <input type="range" id="music-volume" min="0" max="100" value="80">
-                    <span id="music-val">80%</span>
-                </div>
-                <div class="setting-item">
-                    <label for="sfx-volume">Effetti SFX:</label>
-                    <input type="range" id="sfx-volume" min="0" max="100" value="100">
-                    <span id="sfx-val">100%</span>
-                </div>
-            </section>
-
-            <section class="settings-group">
-                <h3 class="gold-text">CONTROLLI TASTIERA</h3>
-                <div class="controls-grid">
-                    <div><span>Spostamento:</span> <strong>Frecce / WASD</strong></div>
-                    <div><span>Azione / Tiro:</span> <strong>Spazio</strong></div>
-                    <div><span>Passaggio:</span> <strong>X</strong></div>
-                </div>
-            </section>
-
-            <section class="settings-group">
-                <h3 class="gold-text">CONTROLLI TOUCH (MOBILE)</h3>
-                <div class="setting-item">
-                    <label for="touch-toggle">Attiva Joypad Touch:</label>
-                    <input type="checkbox" id="touch-toggle" checked>
-                </div>
-                <div class="setting-item">
-                    <label for="touch-size">Dimensione Tasti:</label>
-                    <select id="touch-size">
-                        <option value="small">Piccola</option>
-                        <option value="medium" selected>Media</option>
-                        <option value="large">Grande</option>
-                    </select>
-                </div>
-            </section>
-
-            <button id="btn-close-settings" class="btn-gold">SALVA E CHIUDI</button>
+        <!-- MODALE IMPOSTAZIONI -->
+        <div id="settings-modal" class="hidden">
+            <h2>IMPOSTAZIONI</h2>
+            <div class="setting-row">
+                <label>MUSICA: <span id="music-val">80%</span></label><br>
+                <input type="range" id="music-volume" min="0" max="100" value="80" style="width: 100%;">
+            </div>
+            <div class="setting-row">
+                <label>EFFETTI SONORI: <span id="sfx-val">100%</span></label><br>
+                <input type="range" id="sfx-volume" min="0" max="100" value="100" style="width: 100%;">
+            </div>
+            <button class="arcade-btn" id="btn-close-settings">CHIUDI</button>
         </div>
     </div>
 
-    <!-- FASE 3: SCHERMATA GAMEPLAY CON CAMPO VERTICALE -->
-    <div id="gameplay-screen" class="screen hidden">
-        <header class="gameplay-header">
-            <span id="match-info" class="gold-subheading">SQUADRA vs CPU</span>
-            <div id="scoreboard" class="gold-text">0 - 0</div>
-        </header>
+    <!-- FUNZIONE DI SUPPORTO PER TRADUZIONI/TESTI -->
+    <script>function TX(t) { return t; } function esc(t) { return t; }</script>
 
-        <!-- Campo da Gioco Verticale (Canvas 400x600) -->
-        <div class="field-container">
-            <canvas id="game-canvas" width="400" height="600"></canvas>
-        </div>
-
-        <button id="btn-back-to-select" class="btn-gold">ABBANDONA PARTITA</button>
-    </div>
-
+    <!-- COLLEGAMENTO DEI SCRIPT SEPARATI -->
+    <script src="controls.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
