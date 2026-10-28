@@ -97,7 +97,6 @@ select {
     font-size: 1rem;
 }
 
-/* SCHERMATA PARTITA E CANVAS BLOCCATO CORRETTAMENTE SU PC */
 #match-screen {
     position: relative;
     width: 100vw;
@@ -154,7 +153,6 @@ select {
     z-index: 20;
 }
 
-/* CONTROLLI TOUCH */
 #touch-controls {
     position: absolute;
     bottom: 20px;
