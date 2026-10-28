@@ -10,8 +10,8 @@
 
     <!-- SCHERMATA 1: MENU PRINCIPALE -->
     <div id="main-menu" class="screen">
-        <h1 id="main-title">Monaci's League</h1>
-        <p id="welcome-text">La lega calcistica definitiva.</p>
+        <h1>Monaci's League</h1>
+        <p>Il roguelike calcistico definitivo.</p>
         <div id="menu-buttons">
             <button id="btn-start">Gioca</button>
             <button id="btn-settings">Impostazioni</button>
@@ -30,8 +30,8 @@
             <h3>Controlli & Mappatura</h3>
             <label for="control-device">Dispositivo:</label>
             <select id="control-device">
+                <option value="pc">Computer (WASD / Frecce + Spazio)</option>
                 <option value="mobile">Telefono (Touch)</option>
-                <option value="pc">Computer (Tastiera/Mouse)</option>
             </select>
         </div>
         <button id="btn-settings-back">Torna al Menu</button>
@@ -65,22 +65,24 @@
         </div>
     </div>
 
-    <!-- SCHERMATA 4: MOTORE DELLA PARTITA (In-Match) -->
-    <div id="match-screen" class="screen hidden">
-        <h2 id="match-title">Monaci's League - Match</h2>
-        
-        <div id="scoreboard">
-            <span id="home-team-label">Squadra</span> <span id="home-score">0</span> - <span id="away-score">0</span> <span id="away-team-label">Avversario</span>
-        </div>
-        <div id="clock-display">Minuto: <span id="match-minute">0</span>'</div>
-
-        <div id="content-box">
-            <p id="match-log">Il match sta per cominciare. Primi 4 minuti: Ingresso Scalato (1v1 -> 4v4).</p>
+    <!-- SCHERMATA 4: CAMPO DA GIOCO (INTERATTIVO) -->
+    <div id="match-screen" class="screen hidden" style="max-width: 800px;">
+        <div id="match-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.7rem;">
+            <div><span id="home-name">Squadra</span>: <span id="home-score">0</span></div>
+            <div id="match-clock" style="color: #00ffcc;">Min: 0'</div>
+            <div><span id="away-name">Avversario</span>: <span id="away-score">0</span></div>
         </div>
 
-        <div id="controls">
-            <button id="btn-play-action">Gioca Azione / Avanza Tempo</button>
-            <button id="btn-special-card">Usa Carta Speciale</button>
+        <!-- Canvas del gioco in tempo reale -->
+        <canvas id="gameCanvas" width="700" height="400" style="background: #111; border: 3px solid #FFD700; width: 100%; max-width: 700px; display: block; margin: 0 auto; image-rendering: pixelated;"></canvas>
+
+        <div id="match-info" style="font-size: 0.6rem; margin-top: 10px; color: #FFD700; min-height: 25px;">
+            Usa i tasti direzionali o WASD per muoverti, SPAZIO per calciare!
+        </div>
+
+        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
+            <button id="btn-use-card" style="padding: 10px; font-size: 0.6rem;">Usa Carta Speciale</button>
+            <button id="btn-quit-match" style="padding: 10px; font-size: 0.6rem; background-color: #ff4444; color: #fff;">Abbandona</button>
         </div>
     </div>
 
@@ -97,12 +99,12 @@
                     </tr>
                 </thead>
                 <tbody id="standings-body">
-                    <!-- Generato via JavaScript -->
+                    <!-- Generato via JS -->
                 </tbody>
             </table>
         </div>
         <div id="controls">
-            <button id="btn-next-round">Prossimo Turno</button>
+            <button id="btn-next-round">Torna al Menu / Prossimo Turno</button>
         </div>
     </div>
 
