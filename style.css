@@ -1,10 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
     user-select: none;
     -webkit-user-select: none;
-    font-family: 'Courier New', Courier, monospace;
+    /* Font Pixel Art autentico */
+    font-family: 'Press Start 2P', monospace, sans-serif;
 }
 
 body, html {
@@ -18,7 +21,7 @@ body, html {
     align-items: center;
 }
 
-/* CONTENITORE PRINCIPALE CON CORNICE DORATA COME IN FOTO */
+/* CORNICE ESTERNA GIALLA RETRÒ */
 .screen {
     position: absolute;
     top: 0;
@@ -30,7 +33,7 @@ body, html {
     justify-content: center;
     align-items: center;
     background-color: #000000;
-    border: 8px solid #ffd700; /* Bordo dorato esterno stile foto */
+    border: 8px solid #ffd700;
     z-index: 10;
     padding: 20px;
 }
@@ -39,74 +42,74 @@ body, html {
     display: none !important;
 }
 
-/* TITOLO E TESTO */
+/* TITOLO IN PIXEL ART */
 h1 {
-    font-size: 2.8rem;
+    font-size: 1.8rem;
     color: #ffd700;
     text-transform: uppercase;
     text-align: center;
-    margin-bottom: 0.8rem;
-    font-weight: bold;
-    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+    text-shadow: 3px 3px 0px #333300;
 }
 
+/* SOTTOTITOLO */
 .subtitle {
-    color: #ffffff;
-    font-size: 1.1rem;
-    margin-bottom: 3rem;
+    color: #ffd700;
+    font-size: 0.7rem;
+    margin-bottom: 2.5rem;
     text-align: center;
-    font-weight: bold;
+    line-height: 1.5;
 }
 
-/* PULSANTI STILE FOTO (GIALLO PIENO CON RETTANGOLO NERO/BIANCO) */
+/* BOX DEI PULSANTI */
 .menu-box {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    width: 100%;
-    max-width: 380px;
+    width: 85%;
+    max-width: 320px;
 }
 
+/* PULSANTI GIALLI PIXEL ART CON BORDO E OMBRA BIANCA */
 button, .btn-menu {
-    position: relative;
     width: 100%;
     padding: 16px 20px;
-    background: #ffd700;
+    background-color: #ffd700;
     border: 3px solid #000000;
     color: #000000;
-    font-size: 1.3rem;
+    font-size: 0.9rem;
     font-weight: bold;
     cursor: pointer;
     text-align: center;
-    box-shadow: 0 0 0 3px #ffffff, 0 6px 0 3px #ffffff; /* Effetto doppi bordi retro */
-    transition: transform 0.1s ease;
+    box-shadow: 0 6px 0px #ffffff;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
     border-radius: 0px;
 }
 
 button:active, .btn-menu:active {
-    transform: translateY(3px);
-    box-shadow: 0 0 0 3px #ffffff, 0 3px 0 3px #ffffff;
+    transform: translateY(4px);
+    box-shadow: 0 2px 0px #ffffff;
 }
 
 /* IMPOSTAZIONI */
 .settings-box {
     background: #000000;
     padding: 25px;
-    border: 4px solid #ffd700;
+    border: 3px solid #ffd700;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    width: 100%;
-    max-width: 420px;
+    width: 90%;
+    max-width: 360px;
 }
 
 .setting-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 1.1rem;
+    font-size: 0.8rem;
     color: #ffd700;
-    font-weight: bold;
 }
 
 select {
@@ -114,11 +117,11 @@ select {
     background: #000000;
     color: #ffd700;
     border: 2px solid #ffd700;
-    font-size: 1rem;
-    font-weight: bold;
+    font-size: 0.75rem;
+    font-family: 'Press Start 2P', monospace;
 }
 
-/* SCHERMATA CAMPO / PARTITA ADATTATA A PC E MOBILE */
+/* SCHERMATA PARTITA E CANVAS PIXEL ART */
 #match-screen {
     position: relative;
     width: 100vw;
@@ -128,7 +131,6 @@ select {
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    padding: 0;
     border: none;
 }
 
@@ -137,29 +139,28 @@ select {
     background-color: #2e7d32;
     border: 4px solid #ffd700;
     box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
-    /* Dimensionamento fluido e proporzionato per PC */
-    max-width: 95vw;
-    max-height: 95vh;
+    /* Fondamentale per mantenere l'effetto pixel art tagliente e non sfocato */
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
-/* TABELLONE SEGNAPUNTI */
+/* TABELLONE PUNTEGGIO */
 #scoreboard {
     position: absolute;
     top: 15px;
     display: flex;
-    gap: 20px;
+    gap: 15px;
     align-items: center;
     background: rgba(0, 0, 0, 0.95);
-    padding: 10px 22px;
-    border: 3px solid #ffd700;
+    padding: 10px 18px;
+    border: 2px solid #ffd700;
     z-index: 20;
-    font-weight: bold;
+    font-size: 0.75rem;
     color: #ffd700;
-    font-size: 1.1rem;
 }
 
 .score-val {
-    font-size: 1.4rem;
+    font-size: 0.9rem;
     color: #ffffff;
 }
 
@@ -171,68 +172,66 @@ select {
     position: absolute;
     bottom: 15px;
     background: rgba(0, 0, 0, 0.9);
-    padding: 8px 16px;
+    padding: 8px 14px;
     border: 2px solid #ff4444;
-    font-size: 0.9rem;
+    font-size: 0.65rem;
     z-index: 20;
     color: #ff4444;
-    font-weight: bold;
 }
 
-/* CONTROLLI TOUCH: VISIBILI SOLO SU SMARTPHONE/MOBILE */
+/* CONTROLLI TOUCH: NASCOSTI SU PC */
 #touch-controls {
     position: absolute;
-    bottom: 25px;
+    bottom: 20px;
     left: 0;
     width: 100%;
     display: flex;
     justify-content: space-between;
-    padding: 0 30px;
+    padding: 0 20px;
     pointer-events: none;
     z-index: 30;
 }
 
-/* NASCONDE COMPLETAMENTE L'ANALOGICO E I TASTI TOUCH SU PC */
 body.is-pc #touch-controls {
     display: none !important;
 }
 
 #joystick-base {
-    width: 120px;
-    height: 120px;
-    background: rgba(255, 255, 255, 0.15);
-    border: 3px solid #ffd700;
+    width: 110px;
+    height: 110px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #ffd700;
     border-radius: 50%;
     position: relative;
     pointer-events: auto;
 }
 
 #joystick-stick {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     background: #ffd700;
     border-radius: 50%;
     position: absolute;
-    top: 32px;
-    left: 32px;
-    box-shadow: 0 0 12px #ffd700;
+    top: 32.5px;
+    left: 32.5px;
+    box-shadow: 0 0 10px #ffd700;
 }
 
 .action-buttons {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     pointer-events: auto;
 }
 
 .btn-touch {
-    width: 65px;
-    height: 65px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: #000000;
-    border: 3px solid #ffd700;
+    border: 2px solid #ffd700;
     color: #ffd700;
-    font-size: 0.85rem;
+    font-size: 0.65rem;
     font-weight: bold;
     display: flex;
     flex-direction: column;
