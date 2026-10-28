@@ -64,9 +64,56 @@ const gameState = {
     }
 };
 
-// --- IMMAGINE CAMPO (FASE 3) ---
+// --- GESTIONE SICURA IMMAGINE CAMPO (FASE 3) ---
 const pitchImage = new Image();
-pitchImage.src = 'pitch.png'; // File ritagliato del campo
+pitchImage.src = 'pitch.png';
+let pitchLoaded = false;
+
+pitchImage.onload = () => {
+    pitchLoaded = true;
+};
+
+// Funzione di disegno con fallback di sicurezza anti-404
+function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (pitchLoaded) {
+        // Disegna l'immagine se caricata correttamente da GitHub Pages
+        ctx.drawImage(pitchImage, 0, 0, canvas.width, canvas.height);
+    } else {
+        // Fallback robusto stile campo da calcio retrò se l'immagine fa 404
+        ctx.fillStyle = '#0a7527';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Linee del campo di riserva
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        
+        // Linea centrale
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+
+        // Cerchio di centrocampo
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Scritta di servizio finché l'immagine non si allinea
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.font = '10px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.fillText("CAMPO DI GIOCO PRONTO", canvas.width / 2, canvas.height / 2 + 80);
+    }
+}
+
+function gameLoop() {
+    drawGame();
+    if (!gameplayScreen.classList.contains('hidden')) {
+        requestAnimationFrame(gameLoop);
+    }
+}
 
 // --- AGGIORNA VISUALIZZAZIONI CAROSELLI ---
 function updateTeamDisplay() {
@@ -135,27 +182,6 @@ btnPrevDiff.addEventListener('click', () => {
     updateDiffDisplay();
 });
 
-// --- FASE 3: LOGICA DEL CAMPO E GAMEPLAY ---
-function drawGame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Disegna l'immagine del campo
-    if (pitchImage.complete && pitchImage.naturalWidth !== 0) {
-        ctx.drawImage(pitchImage, 0, 0, canvas.width, canvas.height);
-    } else {
-        // Colore verde di scorta nel caso l'immagine non sia ancora caricata
-        ctx.fillStyle = '#006622';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-}
-
-function gameLoop() {
-    drawGame();
-    if (!gameplayScreen.classList.contains('hidden')) {
-        requestAnimationFrame(gameLoop);
-    }
-}
-
 // Avvio Partita
 btnStartMatch.addEventListener('click', () => {
     teamSelectScreen.classList.add('hidden');
@@ -165,7 +191,7 @@ btnStartMatch.addEventListener('click', () => {
     requestAnimationFrame(gameLoop);
 });
 
-// --- IMPOSTARI AUDIO LIVE ---
+// --- IMPOSTAZIONI AUDIO LIVE ---
 musicSlider.addEventListener('input', (e) => {
     gameState.settings.musicVolume = e.target.value;
     musicValDisplay.textContent = `${e.target.value}%`;
