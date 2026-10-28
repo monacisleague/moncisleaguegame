@@ -12,9 +12,20 @@ const btnBackToMenu = document.getElementById('btn-back-to-menu');
 const btnStartMatch = document.getElementById('btn-start-match');
 const btnBackToSelect = document.getElementById('btn-back-to-select');
 
-// Elementi Selezione FASE 2
-const teamCards = document.querySelectorAll('.team-card');
-const diffButtons = document.querySelectorAll('.btn-diff');
+// Elementi Carosello Squadre
+const btnPrevTeam = document.getElementById('btn-prev-team');
+const btnNextTeam = document.getElementById('btn-next-team');
+const currentTeamLogo = document.getElementById('current-team-logo');
+const currentTeamName = document.getElementById('current-team-name');
+const teamBoxBorder = document.getElementById('team-box-border');
+const teamCounter = document.getElementById('team-counter');
+
+// Elementi Carosello Difficoltà
+const btnPrevDiff = document.getElementById('btn-prev-diff');
+const btnNextDiff = document.getElementById('btn-next-diff');
+const currentDiffName = document.getElementById('current-diff-name');
+const diffCounter = document.getElementById('diff-counter');
+
 const selectedSummaryText = document.getElementById('selected-summary-text');
 
 // Controlli Impostazioni
@@ -23,10 +34,25 @@ const musicValDisplay = document.getElementById('music-val');
 const sfxSlider = document.getElementById('sfx-volume');
 const sfxValDisplay = document.getElementById('sfx-val');
 
+// --- LISTE DATI ---
+const teamsList = [
+    { name: "FC POLAR", color: "#ffffff", logo: "polar.png" },
+    { name: "CALABRONI FC", color: "#0066ff", logo: "calabroni.png" },
+    { name: "DARK KNIGHTS", color: "#ffd700", logo: "darkknights.png" },
+    { name: "FC BIRRAREAL", color: "#00cc44", logo: "birrareal.png" },
+    { name: "KING LIONS FC", color: "#ff2222", logo: "kinglions.png" },
+    { name: "GRIZZLY FC", color: "#ffcc00", logo: "grizzly.png" }
+];
+
+const difficultiesList = ["FACILE", "MEDIO", "DIFFICILE"];
+
+let currentTeamIndex = 0;
+let currentDiffIndex = 1; // Parte da "MEDIO" (indice 1)
+
 // Stato Globale del Gioco
 const gameState = {
-    selectedTeam: null,
-    difficulty: 'MEDIO',
+    selectedTeam: teamsList[0].name,
+    difficulty: difficultiesList[1],
     settings: {
         musicVolume: 80,
         sfxVolume: 100,
@@ -34,6 +60,27 @@ const gameState = {
         touchSize: 'medium'
     }
 };
+
+// --- AGGIORNA VISUALIZZAZIONI CAROSELLI ---
+function updateTeamDisplay() {
+    const team = teamsList[currentTeamIndex];
+    currentTeamName.textContent = team.name;
+    currentTeamLogo.src = team.logo;
+    teamBoxBorder.style.borderColor = team.color;
+    teamCounter.textContent = `${currentTeamIndex + 1} / ${teamsList.length}`;
+    gameState.selectedTeam = team.name;
+}
+
+function updateDiffDisplay() {
+    const diff = difficultiesList[currentDiffIndex];
+    currentDiffName.textContent = diff;
+    diffCounter.textContent = `${currentDiffIndex + 1} / ${difficultiesList.length}`;
+    gameState.difficulty = diff;
+}
+
+// Inizializza i display all'avvio
+updateTeamDisplay();
+updateDiffDisplay();
 
 // --- NAVIGAZIONE SCHERMATE ---
 
@@ -60,33 +107,32 @@ btnBackToSelect.addEventListener('click', () => {
     teamSelectScreen.classList.remove('hidden');
 });
 
-// --- FASE 2: GESTIONE SQUADRA E DIFFICOLTÀ ---
+// --- GESTIONE FRECCE CAROSELLO SQUADRE ---
 
-// Selezione della Squadra
-teamCards.forEach(card => {
-    card.addEventListener('click', () => {
-        teamCards.forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        
-        gameState.selectedTeam = card.getAttribute('data-team');
-        btnStartMatch.disabled = false; // Abilita il pulsante "AVVIA PARTITA"
-    });
+btnNextTeam.addEventListener('click', () => {
+    currentTeamIndex = (currentTeamIndex + 1) % teamsList.length;
+    updateTeamDisplay();
 });
 
-// Selezione della Difficoltà
-diffButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        diffButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        gameState.difficulty = btn.getAttribute('data-diff');
-    });
+btnPrevTeam.addEventListener('click', () => {
+    currentTeamIndex = (currentTeamIndex - 1 + teamsList.length) % teamsList.length;
+    updateTeamDisplay();
 });
 
-// Avvio della Partita -> Passaggio alla FASE 3
+// --- GESTIONE FRECCE CAROSELLO DIFFICOLTÀ ---
+
+btnNextDiff.addEventListener('click', () => {
+    currentDiffIndex = (currentDiffIndex + 1) % difficultiesList.length;
+    updateDiffDisplay();
+});
+
+btnPrevDiff.addEventListener('click', () => {
+    currentDiffIndex = (currentDiffIndex - 1 + difficultiesList.length) % difficultiesList.length;
+    updateDiffDisplay();
+});
+
+// Avvio della Partita
 btnStartMatch.addEventListener('click', () => {
-    if (!gameState.selectedTeam) return;
-
     teamSelectScreen.classList.add('hidden');
     gameplayScreen.classList.remove('hidden');
 
