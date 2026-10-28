@@ -4,15 +4,14 @@ const settingsModal = document.getElementById('settings-modal');
 const teamSelectScreen = document.getElementById('team-select-screen');
 const gameplayScreen = document.getElementById('gameplay-screen');
 
-// Pulsanti Principali
+// Pulsanti Principali Menu
 const btnPlay = document.getElementById('btn-play');
 const btnSettings = document.getElementById('btn-settings');
 const btnCloseSettings = document.getElementById('btn-close-settings');
 const btnBackToMenu = document.getElementById('btn-back-to-menu');
 const btnStartMatch = document.getElementById('btn-start-match');
-const btnBackToSelect = document.getElementById('btn-back-to-select');
 
-// Elementi Carosello Squadre
+// Elementi Carosello Squadre (Fase 2)
 const btnPrevTeam = document.getElementById('btn-prev-team');
 const btnNextTeam = document.getElementById('btn-next-team');
 const currentTeamLogo = document.getElementById('current-team-logo');
@@ -20,13 +19,17 @@ const currentTeamName = document.getElementById('current-team-name');
 const teamBoxBorder = document.getElementById('team-box-border');
 const teamCounter = document.getElementById('team-counter');
 
-// Elementi Carosello Difficoltà
+// Elementi Carosello Difficoltà (Fase 2)
 const btnPrevDiff = document.getElementById('btn-prev-diff');
 const btnNextDiff = document.getElementById('btn-next-diff');
 const currentDiffName = document.getElementById('current-diff-name');
 const diffCounter = document.getElementById('diff-counter');
 
-const selectedSummaryText = document.getElementById('selected-summary-text');
+// Elementi Gameplay (Fase 3)
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const matchInfo = document.getElementById('match-info');
+const btnBackToSelect = document.getElementById('btn-back-to-select');
 
 // Controlli Impostazioni
 const musicSlider = document.getElementById('music-volume');
@@ -34,7 +37,7 @@ const musicValDisplay = document.getElementById('music-val');
 const sfxSlider = document.getElementById('sfx-volume');
 const sfxValDisplay = document.getElementById('sfx-val');
 
-// --- LISTE DATI ---
+// --- DATI SQUADRE E DIFFICOLTÀ ---
 const teamsList = [
     { name: "FC POLAR", color: "#ffffff", logo: "polar.png" },
     { name: "CALABRONI FC", color: "#0066ff", logo: "calabroni.png" },
@@ -47,7 +50,7 @@ const teamsList = [
 const difficultiesList = ["FACILE", "MEDIO", "DIFFICILE"];
 
 let currentTeamIndex = 0;
-let currentDiffIndex = 1; // Parte da "MEDIO" (indice 1)
+let currentDiffIndex = 1; // Parte da "MEDIO"
 
 // Stato Globale del Gioco
 const gameState = {
@@ -60,6 +63,10 @@ const gameState = {
         touchSize: 'medium'
     }
 };
+
+// --- IMMAGINE CAMPO (FASE 3) ---
+const pitchImage = new Image();
+pitchImage.src = 'pitch.png'; // File ritagliato del campo
 
 // --- AGGIORNA VISUALIZZAZIONI CAROSELLI ---
 function updateTeamDisplay() {
@@ -78,12 +85,11 @@ function updateDiffDisplay() {
     gameState.difficulty = diff;
 }
 
-// Inizializza i display all'avvio
+// Inizializzazione Caroselli
 updateTeamDisplay();
 updateDiffDisplay();
 
 // --- NAVIGAZIONE SCHERMATE ---
-
 btnPlay.addEventListener('click', () => {
     mainMenu.classList.add('hidden');
     teamSelectScreen.classList.remove('hidden');
@@ -107,8 +113,7 @@ btnBackToSelect.addEventListener('click', () => {
     teamSelectScreen.classList.remove('hidden');
 });
 
-// --- GESTIONE FRECCE CAROSELLO SQUADRE ---
-
+// --- GESTIONE CAROSELLO SQUADRE ---
 btnNextTeam.addEventListener('click', () => {
     currentTeamIndex = (currentTeamIndex + 1) % teamsList.length;
     updateTeamDisplay();
@@ -119,8 +124,7 @@ btnPrevTeam.addEventListener('click', () => {
     updateTeamDisplay();
 });
 
-// --- GESTIONE FRECCE CAROSELLO DIFFICOLTÀ ---
-
+// --- GESTIONE CAROSELLO DIFFICOLTÀ ---
 btnNextDiff.addEventListener('click', () => {
     currentDiffIndex = (currentDiffIndex + 1) % difficultiesList.length;
     updateDiffDisplay();
@@ -131,16 +135,37 @@ btnPrevDiff.addEventListener('click', () => {
     updateDiffDisplay();
 });
 
-// Avvio della Partita
+// --- FASE 3: LOGICA DEL CAMPO E GAMEPLAY ---
+function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Disegna l'immagine del campo
+    if (pitchImage.complete && pitchImage.naturalWidth !== 0) {
+        ctx.drawImage(pitchImage, 0, 0, canvas.width, canvas.height);
+    } else {
+        // Colore verde di scorta nel caso l'immagine non sia ancora caricata
+        ctx.fillStyle = '#006622';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+}
+
+function gameLoop() {
+    drawGame();
+    if (!gameplayScreen.classList.contains('hidden')) {
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+// Avvio Partita
 btnStartMatch.addEventListener('click', () => {
     teamSelectScreen.classList.add('hidden');
     gameplayScreen.classList.remove('hidden');
 
-    selectedSummaryText.textContent = `Squadra: ${gameState.selectedTeam} | Difficoltà: ${gameState.difficulty}`;
+    matchInfo.textContent = `${gameState.selectedTeam} | ${gameState.difficulty}`;
+    requestAnimationFrame(gameLoop);
 });
 
-// --- AGGIORNAMENTO LIVE IMPOSTAZIONI ---
-
+// --- IMPOSTARI AUDIO LIVE ---
 musicSlider.addEventListener('input', (e) => {
     gameState.settings.musicVolume = e.target.value;
     musicValDisplay.textContent = `${e.target.value}%`;
