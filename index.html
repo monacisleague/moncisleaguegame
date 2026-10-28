@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>FC POLAR - Arcade Soccer</title>
+    <title>Monaci's League - Arcade Soccer</title>
     <style>
         /* --- STILE BLACK AND GOLD ORIGINALE --- */
         * {
@@ -50,7 +50,7 @@
             text-shadow: 2px 2px #332200;
         }
 
-        /* Pulsanti Stile Arcade Black & Gold */
+        /* Pulsanti Stile Arcade Black & Gold Originali */
         .arcade-btn {
             background-color: #1a1a1a;
             color: #ffd700;
@@ -142,13 +142,9 @@
             border: 3px solid #ffd700;
         }
 
-        /* Controlli Tattili e HUD su schermo (Gestiti da controls.js) */
         #touch {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 10;
         }
@@ -159,8 +155,7 @@
 
         #stick {
             position: absolute;
-            width: 80px;
-            height: 80px;
+            width: 80px; height: 80px;
             border-radius: 50%;
             border: 2px solid rgba(255, 215, 0, 0.5);
             background: rgba(255, 215, 0, 0.1);
@@ -175,7 +170,6 @@
             width: 40px; height: 40px;
             border-radius: 50%;
             background: #ffd700;
-            box-shadow: 0 0 10px #ffd700;
         }
 
         #pad {
@@ -183,22 +177,11 @@
             bottom: 20px; right: 20px;
             pointer-events: auto;
         }
-        .act {
-            position: absolute;
-            background: #1a1a1a;
-            border: 2px solid #ffd700;
-            color: #ffd700;
-            font-weight: bold;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        .act.down { background: #ffd700; color: #000; }
 
         #keyhud {
             font-size: 11px;
             text-align: center;
             color: #b39700;
-            margin-top: 5px;
         }
 
         /* Modale Impostazioni */
@@ -223,7 +206,6 @@
 <body>
 
     <div id="shell">
-        <!-- ZONA JOYSTICK E TASTI TOUCH -->
         <div id="touch">
             <div id="stick" class="rest"><div id="knob"></div></div>
             <div id="pad"></div>
@@ -231,7 +213,7 @@
 
         <!-- 1. MENU PRINCIPALE -->
         <div id="main-menu">
-            <h1>FC POLAR</h1>
+            <h1>MONACI'S LEAGUE</h1>
             <p style="font-size: 12px; color: #b39700; margin-bottom: 30px;">ARCADE SOCCER EDITION</p>
             <button class="arcade-btn" id="btn-play">GIOCA</button>
             <button class="arcade-btn" id="btn-settings">IMPOSTAZIONI</button>
@@ -244,7 +226,7 @@
                 <button class="carousel-btn" id="btn-prev-team">&lt;</button>
                 <div class="team-info">
                     <img id="current-team-logo" class="team-logo" src="" alt="Logo">
-                    <span id="current-team-name" style="font-size: 18px; font-weight: bold;">FC POLAR</span>
+                    <span id="current-team-name" style="font-size: 18px; font-weight: bold;">MONACI'S FC</span>
                 </div>
                 <button class="carousel-btn" id="btn-next-team">&gt;</button>
             </div>
@@ -262,9 +244,9 @@
             <button class="arcade-btn" id="btn-back-to-menu" style="background: #331111; border-color: #ff4444; color: #ff4444; box-shadow: 0 4px 0 #990000;">INDIETRO</button>
         </div>
 
-        <!-- 3. GAMEPLAY (CAMPO E PARTITA) -->
+        <!-- 3. GAMEPLAY -->
         <div id="gameplay-screen" class="hidden">
-            <div id="match-info" style="font-size: 14px; font-weight: bold;">FC POLAR | MEDIO</div>
+            <div id="match-info" style="font-size: 14px; font-weight: bold;">MONACI'S LEAGUE | MEDIO</div>
             
             <canvas id="game-canvas" width="340" height="420"></canvas>
             
@@ -288,10 +270,7 @@
         </div>
     </div>
 
-    <!-- FUNZIONE DI SUPPORTO PER TRADUZIONI/TESTI -->
     <script>function TX(t) { return t; } function esc(t) { return t; }</script>
-
-    <!-- COLLEGAMENTO DEI SCRIPT SEPARATI -->
     <script src="controls.js"></script>
     <script src="script.js"></script>
 </body>
