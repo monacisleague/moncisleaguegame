@@ -16,20 +16,20 @@ let currentMinute = 0;
 let matchActive = false;
 let hasBallPossession = true;
 
+// Modalità Tasto Speciale: false = Carta Speciale, true = Rigore Presidenziale
+let isPresidentialMode = false;
+let isMobile = false;
+
 // CANVAS E CAMPO VERTICALE
 let canvas, ctx;
 const PITCH_WIDTH = 360;
-const PITCH_HEIGHT = 1000; // Campo lungo verticale
+const PITCH_HEIGHT = 1000;
 
-// Giocatori (Coordinate Campo)
 let player = { name: "Axel", x: 180, y: 700, size: 14, speed: 3.2, color: '#ffffff' };
 let opponent = { name: "Mark", x: 180, y: 300, size: 14, speed: 2.2, color: '#ff4444' };
 let ball = { x: 180, y: 680, vx: 0, vy: 0, size: 6 };
 
-// Camera che segue Axel (Verticale)
 let cameraY = 400;
-
-// Inputs
 let keys = {};
 let joystickVector = { x: 0, y: 0 };
 
@@ -39,11 +39,49 @@ function showScreen(screenId) {
     if (target) target.classList.remove('hidden');
 }
 
+// Rileva se l'utente è su telefono o PC
+function detectDevice() {
+    const deviceChoice = document.getElementById('control-device')?.value;
+    if (deviceChoice === 'pc') {
+        isMobile = false;
+    } else if (deviceChoice === 'mobile') {
+        isMobile = true;
+    } else {
+        isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    }
+
+    if (!isMobile) {
+        document.body.classList.add('is-pc');
+        document.getElementById('pc-mode-indicator')?.classList.remove('hidden');
+    } else {
+        document.body.classList.remove('is-pc');
+        document.getElementById('pc-mode-indicator')?.classList.add('hidden');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     canvas = document.getElementById('gameCanvas');
     if (canvas) ctx = canvas.getContext('2d');
 
-    window.addEventListener('keydown', e => keys[e.code] = true);
+    detectDevice();
+
+    // Tastiera PC Avanzata
+    window.addEventListener('keydown', e => {
+        keys[e.code] = true;
+
+        // Tasto TAB per switchare la Carta/Rigore Presidenziale su PC
+        if (e.code === 'Tab') {
+            e.preventDefault();
+            toggleSpecialButtonMode();
+        }
+
+        // Tasto Q per attivare la Carta o il Rigore su PC
+        if (e.code === 'KeyQ') {
+            e.preventDefault();
+            useSpecialPower();
+        }
+    });
+
     window.addEventListener('keyup', e => keys[e.code] = false);
 
     setupJoystick();
@@ -51,7 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-start').addEventListener('click', () => showScreen('team-select-screen'));
     document.getElementById('btn-settings').addEventListener('click', () => showScreen('settings-screen'));
-    document.getElementById('btn-settings-back').addEventListener('click', () => showScreen('main-menu'));
+    document.getElementById('btn-settings-back').addEventListener('click', () => {
+        detectDevice();
+        showScreen('main-menu');
+    });
     document.getElementById('btn-team-back').addEventListener('click', () => showScreen('main-menu'));
     document.getElementById('btn-next-round').addEventListener('click', () => showScreen('main-menu'));
     document.getElementById('btn-pause').addEventListener('click', () => {
@@ -60,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-launch-match').addEventListener('click', () => {
+        detectDevice();
         playerTeamName = document.getElementById('team-choice').value;
         let available = teamsList.filter(t => t.name !== playerTeamName);
         opponentTeamName = available[Math.floor(Math.random() * available.length)].name;
@@ -83,7 +125,6 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 
-// CONTROLLO JOYSTICK VIRTUAL
 function setupJoystick() {
     const base = document.getElementById('joystick-base');
     const stick = document.getElementById('joystick-stick');
@@ -135,29 +176,69 @@ function setupJoystick() {
     window.addEventListener('touchend', resetStick);
 }
 
-// SETUP TASTI TOUCH INAZUMA
 function setupTouchButtons() {
     document.getElementById('btn-shoot')?.addEventListener('touchstart', (e) => { e.preventDefault(); triggerAction('shoot'); });
     document.getElementById('btn-pass')?.addEventListener('touchstart', (e) => { e.preventDefault(); triggerAction('pass'); });
     document.getElementById('btn-dribble')?.addEventListener('touchstart', (e) => { e.preventDefault(); triggerAction('dribble'); });
-    document.getElementById('btn-special')?.addEventListener('touchstart', (e) => { e.preventDefault(); triggerAction('special'); });
+
+    document.getElementById('btn-special')?.addEventListener('touchstart', (e) => { e.preventDefault(); useSpecialPower(); });
+    document.getElementById('btn-switch-player')?.addEventListener('touchstart', (e) => { e.preventDefault(); toggleSpecialButtonMode(); });
 
     document.getElementById('btn-tackle')?.addEventListener('touchstart', (e) => { e.preventDefault(); triggerAction('tackle'); });
     document.getElementById('btn-press')?.addEventListener('touchstart', (e) => { e.preventDefault(); triggerAction('press'); });
+}
+
+// Toggle tra Carta Speciale e Rigore Presidenziale (vale sia per Mobile ⇄ sia per PC TAB)
+function toggleSpecialButtonMode() {
+    isPresidentialMode = !isPresidentialMode;
+
+    const btnSpecials = document.querySelectorAll('.pos-special');
+    const pcText = document.getElementById('pc-mode-text');
+
+    btnSpecials.forEach(btn => {
+        const mainTxt = btn.querySelector('.btn-main-txt');
+        const subTxt = btn.querySelector('.btn-sub-txt');
+
+        if (isPresidentialMode) {
+            if (mainTxt) mainTxt.textContent = "Rigore Pres.";
+            if (subTxt) subTxt.textContent = "Dischetto";
+            btn.style.borderColor = "#ff3d00";
+        } else {
+            if (mainTxt) mainTxt.textContent = "Carta Pres.";
+            if (subTxt) subTxt.textContent = "Special";
+            btn.style.borderColor = "#00e5ff";
+        }
+    });
+
+    if (pcText) {
+        pcText.textContent = isPresidentialMode ? "Rigore Pres." : "Carta Pres.";
+        pcText.style.color = isPresidentialMode ? "#ff3d00" : "#00e5ff";
+    }
+}
+
+function useSpecialPower() {
+    if (!matchActive) return;
+
+    if (isPresidentialMode) {
+        alert("RIGORE PRESIDENZIALE! Palla sul dischetto!");
+        ball.x = PITCH_WIDTH / 2;
+        ball.y = 200;
+        ball.vx = 0; ball.vy = -10;
+    } else {
+        alert("CARTA SPECIALE ACTIVATED!");
+    }
 }
 
 function triggerAction(action) {
     if (!matchActive) return;
 
     if (action === 'shoot' && hasBallPossession) {
-        ball.vy = -12; // Calcio verso l'alto (Porta avversaria)
+        ball.vy = -12;
         ball.vx = (Math.random() - 0.5) * 4;
     } else if (action === 'pass' && hasBallPossession) {
         ball.vy = -7;
     } else if (action === 'dribble') {
         player.y -= 25;
-    } else if (action === 'special') {
-        alert("Tecnica Speciale attivata! Trampolino fulmineo!");
     } else if (action === 'tackle') {
         player.y = ball.y; player.x = ball.x;
     }
@@ -194,32 +275,43 @@ function gameLoop() {
 }
 
 function updateGame() {
-    // 1. Movimento Axel
     let mx = joystickVector.x;
     let my = joystickVector.y;
 
+    // Controlli Tastiera PC
     if (keys['KeyW'] || keys['ArrowUp']) my = -1;
     if (keys['KeyS'] || keys['ArrowDown']) my = 1;
     if (keys['KeyA'] || keys['ArrowLeft']) mx = -1;
     if (keys['KeyD'] || keys['ArrowRight']) mx = 1;
 
+    // Azioni Tastiera PC (Spazio / J = Tiro/Tackle, K = Passaggio, L = Dribbling)
+    if (keys['Space'] || keys['KeyJ']) {
+        if (hasBallPossession) triggerAction('shoot');
+        else triggerAction('tackle');
+        keys['Space'] = false; keys['KeyJ'] = false;
+    }
+    if (keys['KeyK']) {
+        triggerAction('pass');
+        keys['KeyK'] = false;
+    }
+    if (keys['KeyL']) {
+        triggerAction('dribble');
+        keys['KeyL'] = false;
+    }
+
     player.x += mx * player.speed;
     player.y += my * player.speed;
 
-    // Limiti campo
     player.x = Math.max(20, Math.min(PITCH_WIDTH - 20, player.x));
     player.y = Math.max(50, Math.min(PITCH_HEIGHT - 50, player.y));
 
-    // Telecamera verticale fissa sul giocatore
     cameraY = player.y - canvas.height / 2;
 
-    // 2. IA Avversario
     if (opponent.x < ball.x) opponent.x += opponent.speed;
     if (opponent.x > ball.x) opponent.x -= opponent.speed;
     if (opponent.y < ball.y) opponent.y += opponent.speed;
     if (opponent.y > ball.y) opponent.y -= opponent.speed;
 
-    // 3. Possesso Palla
     let dPlayer = Math.hypot(player.x - ball.x, player.y - ball.y);
     let dOpponent = Math.hypot(opponent.x - ball.x, opponent.y - ball.y);
 
@@ -233,7 +325,6 @@ function updateGame() {
         ball.y = opponent.y + 10;
     }
 
-    // Switch Tasti Attacco/Difesa
     const atk = document.getElementById('attack-set');
     const def = document.getElementById('defense-set');
     if (atk && def) {
@@ -241,11 +332,9 @@ function updateGame() {
         else { atk.classList.add('hidden'); def.classList.remove('hidden'); }
     }
 
-    // Fisica Palla
     ball.x += ball.vx; ball.y += ball.vy;
     ball.vx *= 0.94; ball.vy *= 0.94;
 
-    // GOL (Porta Nord = Avversari, Porta Sud = Tua)
     if (ball.y < 60 && ball.x > 120 && ball.x < 240) {
         homeScore++;
         document.getElementById('home-score').textContent = homeScore;
@@ -268,54 +357,44 @@ function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    // Centra il campo sullo schermo e trasla la telecamera Y
     let scale = canvas.width / PITCH_WIDTH;
     ctx.scale(scale, scale);
     ctx.translate(0, -cameraY);
 
-    // Erba a strisce
     for (let i = 0; i < PITCH_HEIGHT; i += 80) {
         ctx.fillStyle = (i / 80) % 2 === 0 ? '#388e3c' : '#2e7d32';
         ctx.fillRect(0, i, PITCH_WIDTH, 80);
     }
 
-    // Righe campo
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.lineWidth = 3;
     ctx.strokeRect(15, 50, PITCH_WIDTH - 30, PITCH_HEIGHT - 100);
 
-    // Cerchio centrocampo
     ctx.beginPath();
     ctx.arc(PITCH_WIDTH / 2, PITCH_HEIGHT / 2, 45, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Linea di metà campo
     ctx.beginPath();
     ctx.moveTo(15, PITCH_HEIGHT / 2);
     ctx.lineTo(PITCH_WIDTH - 15, PITCH_HEIGHT / 2);
     ctx.stroke();
 
-    // Porte (Nord e Sud)
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(120, 45, 120, 8);
     ctx.fillRect(120, PITCH_HEIGHT - 53, 120, 8);
 
-    // AVVERSARIO (Pixel Sprite)
     ctx.fillStyle = opponent.color;
     ctx.fillRect(opponent.x - 7, opponent.y - 12, 14, 20);
 
-    // GIOCATORE PRINCIPALE (Axel)
-    ctx.fillStyle = '#e65100'; // Maglia
+    ctx.fillStyle = '#e65100';
     ctx.fillRect(player.x - 7, player.y - 12, 14, 20);
 
-    // Cerchio selezione sotto i piedi (Inazuma style)
     ctx.strokeStyle = '#ff6f00';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(player.x, player.y + 6, 12, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Freccia rossa sopra la testa
     ctx.fillStyle = '#ff3d00';
     ctx.beginPath();
     ctx.moveTo(player.x - 4, player.y - 22);
@@ -323,13 +402,11 @@ function drawGame() {
     ctx.lineTo(player.x, player.y - 16);
     ctx.fill();
 
-    // Nome giocatore sotto i piedi
     ctx.fillStyle = '#ffffff';
     ctx.font = '7px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(player.name, player.x, player.y + 24);
 
-    // PALLA
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
@@ -354,4 +431,3 @@ function endMatchSequence() {
     }
     showScreen('standings-screen');
 }
-    
