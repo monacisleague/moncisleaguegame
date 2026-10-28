@@ -27,11 +27,12 @@
             <input type="range" id="volume-audio" min="0" max="100" value="80">
         </div>
         <div class="settings-group">
-            <h3>Controlli</h3>
-            <label for="control-device">Modalità:</label>
+            <h3>Dispositivo</h3>
+            <label for="control-device">Modalità Controlli:</label>
             <select id="control-device">
-                <option value="mobile">Touch Mobile (Joystick + Tasti Circolari)</option>
-                <option value="pc">Tastiera PC (WASD / Frecce)</option>
+                <option value="auto" selected>Auto-Rilevamento (Mobile/PC)</option>
+                <option value="pc">Tastiera PC</option>
+                <option value="mobile">Touch Mobile</option>
             </select>
         </div>
         <button id="btn-settings-back">Torna al Menu</button>
@@ -66,7 +67,7 @@
 
     <!-- SCHERMATA 4: CAMPO DA GIOCO VERTICALE STYLE INAZUMA -->
     <div id="match-screen" class="screen hidden match-container">
-        <!-- HUD superiore estilo arcade -->
+        <!-- HUD superiore -->
         <div id="hud-top">
             <div class="scoreboard-bar">
                 <span class="team-tag" id="home-tag">Tu</span>
@@ -76,25 +77,29 @@
                 <span class="team-tag" id="away-tag">Rivali</span>
                 <div class="match-time-badge" id="match-clock">0:00</div>
             </div>
+
+            <!-- Indicatore Modalità Presidenziale su PC (Si attiva con TAB) -->
+            <div id="pc-mode-indicator" class="pc-badge hidden">
+                SPECIALE [TAB]: <span id="pc-mode-text">Carta Pres.</span>
+            </div>
+
             <button id="btn-pause" class="pause-btn">II</button>
         </div>
 
         <!-- Canvas di gioco (Campo Verticale) -->
         <canvas id="gameCanvas" width="360" height="640"></canvas>
 
-        <!-- Controlli Touch Overlay in Trasparenza (Inazuma Style) -->
+        <!-- Controlli Touch Overlay (Mostrati SOLO su Mobile) -->
         <div id="touch-overlay">
-            <!-- Joystick analogico virtuale circolare (in basso a sinistra) -->
             <div id="joystick-zone">
                 <div id="joystick-base">
                     <div id="joystick-stick"></div>
                 </div>
             </div>
 
-            <!-- Pulsante Cambio Giocatore (in alto a destra rispetto ai tasti azione) -->
+            <!-- TASTO CON LE FRECCE PER LO SWITCH SU MOBILE -->
             <button id="btn-switch-player" class="circle-btn switch-btn">⇄</button>
 
-            <!-- Tasti Azione Circolari (in basso a destra) -->
             <div id="action-buttons-group">
                 <!-- SET ATTACCO -->
                 <div id="attack-set" class="button-set-radial">
@@ -102,7 +107,7 @@
                         <span>Dribbling</span>
                     </button>
                     <button id="btn-special" class="circle-btn btn-teal pos-special">
-                        <span class="btn-main-txt">Carta / Tecnica</span>
+                        <span class="btn-main-txt">Carta Pres.</span>
                         <span class="btn-sub-txt">Special</span>
                     </button>
                     <button id="btn-pass" class="circle-btn btn-blue-dark pos-pass">
@@ -121,7 +126,7 @@
                         <span>Pressing</span>
                     </button>
                     <button id="btn-def-card" class="circle-btn btn-teal pos-special">
-                        <span class="btn-main-txt">Carta</span>
+                        <span class="btn-main-txt">Carta Pres.</span>
                         <span class="btn-sub-txt">Special</span>
                     </button>
                     <button id="btn-slide" class="circle-btn btn-blue-dark pos-pass">
