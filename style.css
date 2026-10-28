@@ -4,7 +4,7 @@
     padding: 0;
     user-select: none;
     -webkit-user-select: none;
-    font-family: 'Courier New', Courier, monospace; /* Stile retro */
+    font-family: 'Courier New', Courier, monospace;
 }
 
 body, html {
@@ -18,6 +18,7 @@ body, html {
     align-items: center;
 }
 
+/* CONTENITORE PRINCIPALE CON CORNICE DORATA COME IN FOTO */
 .screen {
     position: absolute;
     top: 0;
@@ -29,85 +30,95 @@ body, html {
     justify-content: center;
     align-items: center;
     background-color: #000000;
+    border: 8px solid #ffd700; /* Bordo dorato esterno stile foto */
     z-index: 10;
+    padding: 20px;
 }
 
 .hidden {
     display: none !important;
 }
 
+/* TITOLO E TESTO */
 h1 {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     color: #ffd700;
     text-transform: uppercase;
     text-align: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.8rem;
     font-weight: bold;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
 
 .subtitle {
     color: #ffffff;
-    font-size: 0.9rem;
-    margin-bottom: 2.5rem;
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
     text-align: center;
+    font-weight: bold;
 }
 
+/* PULSANTI STILE FOTO (GIALLO PIENO CON RETTANGOLO NERO/BIANCO) */
 .menu-box {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    width: 85%;
-    max-width: 300px;
+    gap: 20px;
+    width: 100%;
+    max-width: 380px;
 }
 
 button, .btn-menu {
-    padding: 15px;
+    position: relative;
+    width: 100%;
+    padding: 16px 20px;
     background: #ffd700;
-    border: 3px solid #ffffff;
-    border-radius: 0px; /* Stile arcade squadrato */
+    border: 3px solid #000000;
     color: #000000;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: bold;
     cursor: pointer;
     text-align: center;
-    box-shadow: 0 4px 0px #b39700;
+    box-shadow: 0 0 0 3px #ffffff, 0 6px 0 3px #ffffff; /* Effetto doppi bordi retro */
     transition: transform 0.1s ease;
+    border-radius: 0px;
 }
 
 button:active, .btn-menu:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 0px #b39700;
+    transform: translateY(3px);
+    box-shadow: 0 0 0 3px #ffffff, 0 3px 0 3px #ffffff;
 }
 
+/* IMPOSTAZIONI */
 .settings-box {
-    background: #111111;
-    padding: 20px;
-    border: 2px solid #ffd700;
+    background: #000000;
+    padding: 25px;
+    border: 4px solid #ffd700;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    width: 90%;
-    max-width: 320px;
+    gap: 20px;
+    width: 100%;
+    max-width: 420px;
 }
 
 .setting-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: #ffd700;
+    font-weight: bold;
 }
 
 select {
-    padding: 6px;
+    padding: 8px;
     background: #000000;
     color: #ffd700;
     border: 2px solid #ffd700;
     font-size: 1rem;
+    font-weight: bold;
 }
 
-/* SCHERMATA PARTITA E CANVAS BLOCCATO CORRETTAMENTE SU PC */
+/* SCHERMATA CAMPO / PARTITA ADATTATA A PC E MOBILE */
 #match-screen {
     position: relative;
     width: 100vw;
@@ -117,35 +128,38 @@ select {
     justify-content: center;
     align-items: center;
     overflow: hidden;
+    padding: 0;
+    border: none;
 }
 
 #gameCanvas {
     display: block;
     background-color: #2e7d32;
-    height: 92vh;
-    max-height: 900px;
-    width: auto;
-    aspect-ratio: 360 / 1000;
-    border: 3px solid #ffd700;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    border: 4px solid #ffd700;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+    /* Dimensionamento fluido e proporzionato per PC */
+    max-width: 95vw;
+    max-height: 95vh;
 }
 
+/* TABELLONE SEGNAPUNTI */
 #scoreboard {
     position: absolute;
     top: 15px;
     display: flex;
-    gap: 15px;
+    gap: 20px;
     align-items: center;
-    background: rgba(0, 0, 0, 0.9);
-    padding: 8px 16px;
-    border: 2px solid #ffd700;
+    background: rgba(0, 0, 0, 0.95);
+    padding: 10px 22px;
+    border: 3px solid #ffd700;
     z-index: 20;
     font-weight: bold;
     color: #ffd700;
+    font-size: 1.1rem;
 }
 
 .score-val {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     color: #ffffff;
 }
 
@@ -156,71 +170,72 @@ select {
 #pc-mode-indicator {
     position: absolute;
     bottom: 15px;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 6px 12px;
-    border: 1px solid #ff4444;
-    font-size: 0.85rem;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 8px 16px;
+    border: 2px solid #ff4444;
+    font-size: 0.9rem;
     z-index: 20;
     color: #ff4444;
+    font-weight: bold;
 }
 
-/* CONTROLLI TOUCH */
+/* CONTROLLI TOUCH: VISIBILI SOLO SU SMARTPHONE/MOBILE */
 #touch-controls {
     position: absolute;
-    bottom: 20px;
+    bottom: 25px;
     left: 0;
     width: 100%;
     display: flex;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 30px;
     pointer-events: none;
     z-index: 30;
 }
 
+/* NASCONDE COMPLETAMENTE L'ANALOGICO E I TASTI TOUCH SU PC */
 body.is-pc #touch-controls {
     display: none !important;
 }
 
 #joystick-base {
-    width: 110px;
-    height: 110px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 215, 0, 0.5);
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 3px solid #ffd700;
     border-radius: 50%;
     position: relative;
     pointer-events: auto;
 }
 
 #joystick-stick {
-    width: 45px;
-    height: 45px;
+    width: 50px;
+    height: 50px;
     background: #ffd700;
     border-radius: 50%;
     position: absolute;
-    top: 32.5px;
-    left: 32.5px;
-    box-shadow: 0 0 10px #ffd700;
+    top: 32px;
+    left: 32px;
+    box-shadow: 0 0 12px #ffd700;
 }
 
 .action-buttons {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     pointer-events: auto;
 }
 
 .btn-touch {
-    width: 60px;
-    height: 60px;
+    width: 65px;
+    height: 65px;
     border-radius: 50%;
-    background: #111111;
-    border: 2px solid #ffd700;
+    background: #000000;
+    border: 3px solid #ffd700;
     color: #ffd700;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: bold;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
