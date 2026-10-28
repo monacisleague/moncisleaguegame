@@ -250,7 +250,7 @@ h1 {
     gap: 8px;
 }
 
-/* --- FASE 3: STILE GAMEPLAY E CAMPO --- */
+/* --- FASE 3: STILE GAMEPLAY E CAMPO VERTICALE --- */
 .gameplay-header {
     display: flex;
     flex-direction: column;
@@ -276,7 +276,7 @@ h1 {
 
 #game-canvas {
     width: 100%;
-    max-width: 580px;
+    max-width: 320px; /* Ottimizzato per schermi verticali */
     height: auto;
     image-rendering: pixelated;
     display: block;
