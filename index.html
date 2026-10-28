@@ -23,54 +23,42 @@
         </div>
     </div>
 
-    <!-- SCHERMATA SELEZIONE SQUADRA E DIFFICOLTÀ (FASE 2) -->
+    <!-- SCHERMATA SELEZIONE SQUADRA E DIFFICOLTÀ CON CAROSELLI -->
     <div id="team-select-screen" class="screen hidden">
         <h1 class="gold-text">PREPARAZIONE PARTITA</h1>
 
-        <!-- Sezione Selezione Squadra -->
+        <!-- Sezione Selezione Squadra tramite Carosello -->
         <div class="selection-section">
             <h2 class="gold-subheading">SCEGLI LA TUA SQUADRA</h2>
-            <div class="teams-grid">
-                <button class="team-card team-polar" data-team="FC POLAR">
-                    <span class="color-badge badge-polar"></span>
-                    <span class="team-name">FC POLAR</span>
-                </button>
-                <button class="team-card team-calabroni" data-team="CALABRONI FC">
-                    <span class="color-badge badge-calabroni"></span>
-                    <span class="team-name">CALABRONI FC</span>
-                </button>
-                <button class="team-card team-darkknights" data-team="DARK KNIGHTS">
-                    <span class="color-badge badge-darkknights"></span>
-                    <span class="team-name">DARK KNIGHTS</span>
-                </button>
-                <button class="team-card team-birrareal" data-team="FC BIRRAREAL">
-                    <span class="color-badge badge-birrareal"></span>
-                    <span class="team-name">FC BIRRAREAL</span>
-                </button>
-                <button class="team-card team-kinglions" data-team="KING LIONS FC">
-                    <span class="color-badge badge-kinglions"></span>
-                    <span class="team-name">KING LIONS FC</span>
-                </button>
-                <button class="team-card team-grizzly" data-team="GRIZZLY FC">
-                    <span class="color-badge badge-grizzly"></span>
-                    <span class="team-name">GRIZZLY FC</span>
-                </button>
+            
+            <div class="carousel-container">
+                <button id="btn-prev-team" class="btn-arrow">◀</button>
+                <div class="team-display-box" id="team-box-border">
+                    <img id="current-team-logo" src="" alt="Logo Squadra" class="team-carousel-logo">
+                    <span id="current-team-name" class="team-carousel-name">SQUADRA</span>
+                </div>
+                <button id="btn-next-team" class="btn-arrow">▶</button>
             </div>
+            <p id="team-counter" class="team-counter-text">1 / 6</p>
         </div>
 
-        <!-- Sezione Selezione Difficoltà -->
+        <!-- Sezione Selezione Difficoltà tramite Carosello -->
         <div class="selection-section">
             <h2 class="gold-subheading">DIFFICOLTÀ</h2>
-            <div class="difficulty-buttons">
-                <button class="btn-diff" data-diff="FACILE">FACILE</button>
-                <button class="btn-diff active" data-diff="MEDIO">MEDIO</button>
-                <button class="btn-diff" data-diff="DIFFICILE">DIFFICILE</button>
+            
+            <div class="carousel-container">
+                <button id="btn-prev-diff" class="btn-arrow">◀</button>
+                <div class="team-display-box diff-display-box">
+                    <span id="current-diff-name" class="team-carousel-name diff-name-text">MEDIO</span>
+                </div>
+                <button id="btn-next-diff" class="btn-arrow">▶</button>
             </div>
+            <p id="diff-counter" class="team-counter-text">2 / 3</p>
         </div>
 
         <!-- Pulsanti di Azione -->
         <div class="action-buttons">
-            <button id="btn-start-match" class="btn-gold" disabled>AVVIA PARTITA</button>
+            <button id="btn-start-match" class="btn-gold">AVVIA PARTITA</button>
             <button id="btn-back-to-menu" class="btn-gold">INDIETRO</button>
         </div>
     </div>
@@ -128,7 +116,7 @@
         <h1 class="gold-text">GAMEPLAY</h1>
         <p id="selected-summary-text" class="gold-subheading"></p>
         <p style="margin-top: 15px;">Pronto per la FASE 3!</p>
-        <button id="btn-back-to-select" class="btn-gold" style="margin-top: 20px;">CAMBIA SQUADRA</button>
+        <button id="btn-back-to-select" class="btn-gold" style="margin-top: 20px;">CAMBIA IMPOSTAZIONI</button>
     </div>
 
     <script src="script.js"></script>
