@@ -73,35 +73,29 @@ pitchImage.onload = () => {
     pitchLoaded = true;
 };
 
-// Funzione di disegno con fallback di sicurezza anti-404
+// Funzione di disegno campo con fallback
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (pitchLoaded) {
-        // Disegna l'immagine se caricata correttamente da GitHub Pages
         ctx.drawImage(pitchImage, 0, 0, canvas.width, canvas.height);
     } else {
-        // Fallback robusto stile campo da calcio retrò se l'immagine fa 404
         ctx.fillStyle = '#0a7527';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Linee del campo di riserva
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 3;
         
-        // Linea centrale
         ctx.beginPath();
         ctx.moveTo(canvas.width / 2, 0);
         ctx.lineTo(canvas.width / 2, canvas.height);
         ctx.stroke();
 
-        // Cerchio di centrocampo
         ctx.beginPath();
         ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Scritta di servizio finché l'immagine non si allinea
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.font = '10px "Press Start 2P"';
         ctx.textAlign = 'center';
         ctx.fillText("CAMPO DI GIOCO PRONTO", canvas.width / 2, canvas.height / 2 + 80);
@@ -115,14 +109,20 @@ function gameLoop() {
     }
 }
 
-// --- AGGIORNA VISUALIZZAZIONI CAROSELLI ---
+// --- AGGIORNA VISUALIZZAZIONI CAROSELLI CON SICUREZZA LOGHI ---
 function updateTeamDisplay() {
     const team = teamsList[currentTeamIndex];
     currentTeamName.textContent = team.name;
-    currentTeamLogo.src = team.logo;
     teamBoxBorder.style.borderColor = team.color;
     teamCounter.textContent = `${currentTeamIndex + 1} / ${teamsList.length}`;
     gameState.selectedTeam = team.name;
+
+    // Gestione intelligente del logo: se il file non esiste su GitHub, mostra uno stemma di riserva colorato
+    currentTeamLogo.src = team.logo;
+    currentTeamLogo.onerror = () => {
+        // Fallback visivo se il file logo.png non viene trovato (evita schermate vuote o loghi errati)
+        currentTeamLogo.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='50'><rect width='50' height='50' fill='%23111' stroke='%23ffd700' stroke-width='3'/><text x='25' y='30' font-size='16' text-anchor='middle' fill='%23ffd700' font-family='sans-serif'>⚽</text></svg>";
+    };
 }
 
 function updateDiffDisplay() {
