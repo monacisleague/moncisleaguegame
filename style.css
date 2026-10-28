@@ -4,7 +4,7 @@
     margin: 0;
     padding: 0;
     font-family: 'Press Start 2P', cursive;
-    image-rendering: pixelated; /* Rendering nitido per elementi pixel */
+    image-rendering: pixelated;
 }
 
 body {
@@ -14,7 +14,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 /* Colore Oro */
@@ -23,17 +23,23 @@ body {
     text-shadow: 3px 3px 0px #8b6508, -2px -2px 0px #fff8dc;
 }
 
+.gold-subheading {
+    color: #ffd700;
+    font-size: 11px;
+    margin-bottom: 15px;
+}
+
 /* Layout Schermate */
 .screen {
     width: 100%;
-    max-width: 600px;
+    max-width: 650px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    gap: 40px;
+    gap: 25px;
 }
 
 /* Header e Logo */
@@ -54,11 +60,11 @@ body {
 }
 
 h1 {
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1.4;
 }
 
-/* Contenitore Pulsanti */
+/* Contenitore Pulsanti Menu */
 .menu-buttons {
     display: flex;
     flex-direction: column;
@@ -67,31 +73,135 @@ h1 {
     max-width: 320px;
 }
 
-/* Tasti in Oro stile Retro */
+/* Tasti Oro Stile Retro */
 .btn-gold {
     background-color: #ffd700;
     color: #000000;
     border: 4px solid #b8860b;
-    padding: 15px 20px;
-    font-size: 14px;
+    padding: 14px 18px;
+    font-size: 12px;
     font-weight: bold;
     cursor: pointer;
     box-shadow: 4px 4px 0px #8b6508;
     transition: transform 0.1s, background-color 0.1s;
 }
 
-.btn-gold:hover {
+.btn-gold:hover:not(:disabled) {
     background-color: #ffec8b;
     transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0px #8b6508;
 }
 
-.btn-gold:active {
+.btn-gold:active:not(:disabled) {
     transform: translate(2px, 2px);
     box-shadow: 2px 2px 0px #8b6508;
 }
 
-/* Finestra Modale Impostazioni */
+.btn-gold:disabled {
+    background-color: #555555;
+    color: #888888;
+    border-color: #333333;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* --- FASE 2: SELEZIONE SQUADRE E DIFFICOLTÀ --- */
+.selection-section {
+    width: 100%;
+    background: #0d0d0d;
+    border: 3px solid #ffd700;
+    padding: 15px;
+    box-shadow: 4px 4px 0px #8b6508;
+}
+
+.teams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+}
+
+/* Schede Squadra */
+.team-card {
+    background: #1a1a1a;
+    border: 3px solid #444;
+    padding: 12px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.15s ease;
+}
+
+.team-card:hover {
+    border-color: #ffd700;
+    transform: scale(1.02);
+}
+
+.team-card.selected {
+    border-color: #ffd700;
+    background-color: #332b00;
+    box-shadow: 0 0 10px #ffd700;
+}
+
+.team-name {
+    color: #ffffff;
+    font-size: 9px;
+    text-align: left;
+}
+
+/* Badge Colore Squadra */
+.color-badge {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ffffff;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.badge-polar { background-color: #ffffff; }
+.badge-calabroni { background-color: #0066ff; }
+.badge-darkknights { background-color: #111111; border-color: #ffd700; }
+.badge-birrareal { background-color: #00cc44; }
+.badge-kinglions { background-color: #ff2222; }
+.badge-grizzly { background-color: #ffcc00; }
+
+/* Pulsanti Difficoltà */
+.difficulty-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-diff {
+    background: #1a1a1a;
+    color: #ffffff;
+    border: 3px solid #555;
+    padding: 10px 12px;
+    font-size: 10px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.btn-diff:hover {
+    border-color: #ffd700;
+}
+
+.btn-diff.active {
+    background: #ffd700;
+    color: #000000;
+    border-color: #b8860b;
+    font-weight: bold;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+}
+
+/* Modale Impostazioni */
 .modal {
     position: fixed;
     top: 0;
@@ -126,7 +236,7 @@ h1 {
 }
 
 .settings-group h3 {
-    font-size: 12px;
+    font-size: 11px;
     margin-bottom: 12px;
 }
 
@@ -145,7 +255,7 @@ h1 {
 }
 
 .controls-grid {
-    font-size: 10px;
+    font-size: 9px;
     color: #ddd;
     display: flex;
     flex-direction: column;
