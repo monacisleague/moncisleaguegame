@@ -1,160 +1,288 @@
+/* Reset di base e Font Pixel Art */
 * {
     box-sizing: border-box;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-body {
     margin: 0;
     padding: 0;
-    background-color: #000;
-    color: #ffd700;
-    font-family: 'Courier New', Courier, monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
+    font-family: 'Press Start 2P', cursive;
     image-rendering: pixelated;
 }
 
-#shell {
-    position: relative;
-    width: 400px;
-    height: 600px;
-    background-color: #0c0c0c;
-    border: 4px solid #ffd700;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-}
-
-.hidden {
-    display: none !important;
-}
-
-h1, h2 {
-    margin: 0;
-    text-align: center;
-    letter-spacing: 2px;
-}
-
-.subtitle {
-    font-size: 11px;
-    color: #b39700;
-    margin-bottom: 25px;
-}
-
-.arcade-btn {
-    background-color: #111;
+body {
+    background-color: #000000;
     color: #ffd700;
-    border: 2px solid #ffd700;
-    padding: 10px 20px;
-    font-size: 16px;
-    font-weight: bold;
-    font-family: 'Courier New', Courier, monospace;
-    cursor: pointer;
-    text-transform: uppercase;
-    width: 80%;
-    margin: 8px 0;
-    text-align: center;
-}
-
-.arcade-btn:active {
-    background-color: #ffd700;
-    color: #000;
-}
-
-.btn-danger {
-    border-color: #ff4444;
-    color: #ff4444;
-}
-
-.btn-small {
-    font-size: 11px;
-    padding: 6px;
-    width: 50%;
-}
-
-#main-menu, #team-select-screen, #gameplay-screen, #settings-modal {
+    min-height: 100vh;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    width: 100%;
-    height: 100%;
+    overflow-x: hidden;
 }
 
-.carousel-box {
+/* Colore Oro */
+.gold-text {
+    color: #ffd700;
+    text-shadow: 3px 3px 0px #8b6508, -2px -2px 0px #fff8dc;
+}
+
+.gold-subheading {
+    color: #ffd700;
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+/* Layout Schermate */
+.screen {
+    width: 100%;
+    max-width: 650px;
+    padding: 20px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    background: #111;
-    border: 2px solid #ffd700;
-    width: 100%;
-    padding: 8px;
-    margin: 10px 0;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
 }
 
-.carousel-btn {
-    background: #ffd700;
-    color: #000;
-    border: none;
-    font-weight: bold;
+/* Header e Logo Principale */
+.league-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.game-logo {
+    width: 120px;
+    height: auto;
+    border: 4px solid #ffd700;
+    background-color: #111;
+    box-shadow: 4px 4px 0px #8b6508;
+}
+
+h1 {
     font-size: 18px;
-    padding: 4px 12px;
-    cursor: pointer;
+    line-height: 1.4;
 }
 
-.team-info {
+/* Contenitore Pulsanti Menu */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 320px;
+}
+
+/* Tasti Oro Stile Retro */
+.btn-gold {
+    background-color: #ffd700;
+    color: #000000;
+    border: 4px solid #b8860b;
+    padding: 14px 18px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #8b6508;
+    transition: transform 0.1s, background-color 0.1s;
+}
+
+.btn-gold:hover {
+    background-color: #ffec8b;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #8b6508;
+}
+
+.btn-gold:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #8b6508;
+}
+
+/* --- FASE 2: SEZIONI E CAROSELLI --- */
+.selection-section {
+    width: 100%;
+    background: #0d0d0d;
+    border: 3px solid #ffd700;
+    padding: 12px;
+    box-shadow: 4px 4px 0px #8b6508;
+}
+
+.carousel-container {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 15px;
+    margin: 8px 0;
 }
 
-.team-logo {
-    width: 40px;
-    height: 40px;
-    border: 1px solid #ffd700;
-    background: #222;
-}
-
-.team-name-text {
+/* Frecce del Carosello */
+.btn-arrow {
+    background: #1a1a1a;
+    color: #ffd700;
+    border: 3px solid #ffd700;
     font-size: 14px;
+    padding: 12px 10px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px #8b6508;
+    transition: transform 0.1s, background-color 0.1s;
+}
+
+.btn-arrow:hover {
+    background-color: #332b00;
+    transform: scale(1.05);
+}
+
+.btn-arrow:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #8b6508;
+}
+
+/* Box Centrale Squadra / Difficoltà */
+.team-display-box {
+    background: #141414;
+    border: 4px solid #ffd700;
+    width: 230px;
+    height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    transition: border-color 0.3s ease;
+}
+
+.diff-display-box {
+    height: 70px;
+}
+
+.team-carousel-logo {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.team-carousel-name {
+    color: #ffffff;
+    font-size: 10px;
+    text-align: center;
     font-weight: bold;
 }
 
 .diff-name-text {
-    font-size: 14px;
-    font-weight: bold;
-    width: 100%;
-    text-align: center;
-}
-
-.counter-text {
-    font-size: 10px;
-}
-
-.match-info-text {
     font-size: 12px;
-    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 2px 2px 0px #8b6508;
+}
+
+.team-counter-text {
+    font-size: 9px;
+    color: #b8860b;
+    margin-top: 2px;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+}
+
+/* Modale Impostazioni */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background-color: #111111;
+    border: 4px solid #ffd700;
+    padding: 25px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.settings-group {
+    border-top: 2px dashed #ffd700;
+    padding-top: 15px;
+    text-align: left;
+}
+
+.settings-group h3 {
+    font-size: 11px;
+    margin-bottom: 12px;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    margin-bottom: 10px;
+    color: #ffffff;
+}
+
+.setting-item input[type="range"] {
+    accent-color: #ffd700;
+    cursor: pointer;
+}
+
+.controls-grid {
+    font-size: 9px;
+    color: #ddd;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* --- FASE 3: STILE GAMEPLAY E CAMPO VERTICALE --- */
+.gameplay-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+#scoreboard {
+    font-size: 14px;
+    background: #0d0d0d;
+    border: 3px solid #ffd700;
+    padding: 6px 15px;
+    box-shadow: 3px 3px 0px #8b6508;
+}
+
+.field-container {
+    border: 4px solid #ffd700;
+    background-color: #000000;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    line-height: 0;
 }
 
 #game-canvas {
-    background-color: #1b5e20;
-    border: 2px solid #ffd700;
-    image-rendering: pixelated;
-}
-
-.setting-row {
-    margin: 10px 0;
-    text-align: center;
-    width: 80%;
-}
-
-.range-input {
     width: 100%;
+    max-width: 320px; /* Ottimizzato per schermi verticali */
+    height: auto;
+    image-rendering: pixelated;
+    display: block;
+}
+
+/* Utility per nascondere elementi */
+.hidden {
+    display: none !important;
 }
