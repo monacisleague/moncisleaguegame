@@ -96,7 +96,7 @@ let squadraOspite = {
     ]
 };
 
-let palla = { x: centroX, y: centroY, radius: 2 };
+let palla = { x: centroX, y: centroY, radius: 2, vx: 0, vy: 0, libera: false, blocco: 0 };
 
 // Camera
 const camera = { x: centroX - VIEW_W / 2, y: centroY - VIEW_H / 2 };
@@ -112,42 +112,190 @@ function aggiornaCamera() {
     camera.y += (targetY - camera.y) * 0.15;
 }
 
-// Giocatore provvisorio (da sostituire con gli sprite veri)
-function disegnaGiocatore(g, colore) {
-    const x = Math.round(g.x - camera.x);
-    const y = Math.round(g.y - camera.y);
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fillRect(x - 5, y + 7, 10, 3);          // ombra
-    ctx.fillStyle = '#2a1c14';
-    ctx.fillRect(x - 3, y - 9, 6, 2);           // capelli
-    ctx.fillStyle = '#f0be8c';
-    ctx.fillRect(x - 3, y - 7, 6, 4);           // testa
-    ctx.fillStyle = colore;
-    ctx.fillRect(x - 4, y - 3, 8, 7);           // maglia
-    ctx.fillStyle = '#222';
-    ctx.fillRect(x - 3, y + 4, 2, 3);           // gambe
-    ctx.fillRect(x + 1, y + 4, 2, 3);
+// --- GIOCATORI: SPRITE E SQUADRE ---
+// giocatori.png contiene 24 calciatori (6 squadre x 4 giocatori), nello stesso ordine di teamsList.
+// Per ogni giocatore: 3 righe (davanti, dietro, di lato) x 4 frame (fermo, corsa A, corsa B, calcio).
+const sprite = new Image();
+sprite.src = 'giocatori.png';
+const CELLA_W = 16, CELLA_H = 20;
+const DIR = { GIU: 0, SU: 1, DESTRA: 2, SINISTRA: 3 };
+const SEQ_CORSA = [1, 0, 2, 0];
+
+// Formazione 3+1 (portiere, due difensori, attaccante). I valori y sono la posizione dei piedi.
+const FORMAZIONE_CASA = [
+    { x: 176, y: 575, ruolo: "POR" },
+    { x: 110, y: 505, ruolo: "DIF" },
+    { x: 242, y: 505, ruolo: "DIF" },
+    { x: 176, y: 405, ruolo: "ATT" }
+];
+const FORMAZIONE_OSPITE = [
+    { x: 176, y: 101, ruolo: "POR" },
+    { x: 110, y: 171, ruolo: "DIF" },
+    { x: 242, y: 171, ruolo: "DIF" },
+    { x: 176, y: 271, ruolo: "ATT" }
+];
+
+function creaGiocatori(formazione, dirIniziale) {
+    return formazione.map((f, slot) => ({
+        x: f.x, y: f.y, ruolo: f.ruolo, slot: slot,
+        dir: dirIniziale, inMovimento: false, animT: 0, calcioT: 0
+    }));
 }
 
-// --- MOVIMENTO PALLONE DI PROVA (temporaneo, per testare camera e tribune) ---
+// Prepara una nuova partita: squadre, formazioni e pallone
+function preparaPartita() {
+    const idxCasa = currentTeamIndex;
+    // PROVVISORIO: l'avversario è una squadra a caso diversa dalla tua
+    let idxOspite;
+    do { idxOspite = Math.floor(Math.random() * teamsList.length); } while (idxOspite === idxCasa);
+
+    squadraCasa.idx = idxCasa;
+    squadraCasa.nome = teamsList[idxCasa].name;
+    squadraCasa.colore = teamsList[idxCasa].color;
+    squadraOspite.idx = idxOspite;
+    squadraOspite.nome = teamsList[idxOspite].name;
+    squadraOspite.colore = teamsList[idxOspite].color;
+
+    squadraCasa.giocatori = creaGiocatori(FORMAZIONE_CASA, DIR.SU);
+    squadraOspite.giocatori = creaGiocatori(FORMAZIONE_OSPITE, DIR.GIU);
+
+    palla.x = centroX;
+    palla.y = centroY;
+    palla.vx = 0;
+    palla.vy = 0;
+    palla.libera = false;
+    palla.blocco = 0;
+    camera.x = clamp(palla.x - VIEW_W / 2, 0, WORLD_W - VIEW_W);
+    camera.y = clamp(palla.y - VIEW_H / 2, 0, WORLD_H - VIEW_H);
+}
+
+function direzioneVerso(dx, dy) {
+    if (Math.abs(dy) > Math.abs(dx)) return dy > 0 ? DIR.GIU : DIR.SU;
+    return dx > 0 ? DIR.DESTRA : DIR.SINISTRA;
+}
+
+function vettoreDir(dir) {
+    return [[0, 1], [0, -1], [1, 0], [-1, 0]][dir];
+}
+
+function disegnaGiocatore(g, squadra) {
+    const x = Math.round(g.x - camera.x);
+    const y = Math.round(g.y - camera.y);
+    // ombra
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x - 5, y - 1, 10, 3);
+
+    if (!(sprite.complete && sprite.naturalWidth > 0)) {
+        // se l'immagine non è ancora caricata: segnaposto nel colore della squadra
+        ctx.fillStyle = squadra.colore;
+        ctx.fillRect(x - 4, y - 14, 8, 13);
+        return;
+    }
+    const indice = squadra.idx * 4 + g.slot;
+    const riga = g.dir === DIR.GIU ? 0 : (g.dir === DIR.SU ? 1 : 2);
+    let frame = 0;
+    if (g.calcioT > 0) frame = 3;
+    else if (g.inMovimento) frame = SEQ_CORSA[Math.floor(g.animT / 5) % 4];
+    const sx = frame * CELLA_W;
+    const sy = indice * CELLA_H * 3 + riga * CELLA_H;
+
+    if (g.dir === DIR.SINISTRA) {
+        ctx.save();
+        ctx.translate(x, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(sprite, sx, sy, CELLA_W, CELLA_H, -CELLA_W / 2, y - 19, CELLA_W, CELLA_H);
+        ctx.restore();
+    } else {
+        ctx.drawImage(sprite, sx, sy, CELLA_W, CELLA_H, x - CELLA_W / 2, y - 19, CELLA_W, CELLA_H);
+    }
+}
+
+// --- COMANDI DI PROVA (temporanei): muovi l'attaccante con frecce/WASD, Spazio = tiro, X = passaggio ---
 const tasti = {};
-window.addEventListener('keydown', (e) => { tasti[e.key.toLowerCase()] = true; });
+window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    tasti[k] = true;
+    if (!gameplayScreen.classList.contains('hidden') &&
+        ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) {
+        e.preventDefault();
+    }
+});
 window.addEventListener('keyup', (e) => { tasti[e.key.toLowerCase()] = false; });
 
-function muoviPalla() {
-    const v = 2;
-    if (tasti['arrowleft'] || tasti['a']) palla.x -= v;
-    if (tasti['arrowright'] || tasti['d']) palla.x += v;
-    if (tasti['arrowup'] || tasti['w']) palla.y -= v;
-    if (tasti['arrowdown'] || tasti['s']) palla.y += v;
-    palla.x = clamp(palla.x, campo.x, campo.x + campo.width);
-    palla.y = clamp(palla.y, campo.y - 10, campo.y + campo.height + 10);
+function aggiornaGiocoDiProva() {
+    const g = squadraCasa.giocatori[3];
+    let dx = 0, dy = 0;
+    if (tasti['arrowleft'] || tasti['a']) dx -= 1;
+    if (tasti['arrowright'] || tasti['d']) dx += 1;
+    if (tasti['arrowup'] || tasti['w']) dy -= 1;
+    if (tasti['arrowdown'] || tasti['s']) dy += 1;
+
+    if (dx !== 0 || dy !== 0) {
+        const len = Math.hypot(dx, dy);
+        g.x += (dx / len) * 1.3;
+        g.y += (dy / len) * 1.3;
+        g.dir = direzioneVerso(dx, dy);
+        g.inMovimento = true;
+        g.animT++;
+    } else {
+        g.inMovimento = false;
+    }
+    g.x = clamp(g.x, campo.x + 6, campo.x + campo.width - 6);
+    g.y = clamp(g.y, campo.y + 2, campo.y + campo.height + 2);
+
+    // calcio
+    if (g.calcioT > 0) g.calcioT--;
+    const vicino = Math.hypot(palla.x - g.x, palla.y - (g.y - 3)) < 14;
+    if ((tasti[' '] || tasti['x']) && g.calcioT === 0) {
+        g.calcioT = 10;
+        if (vicino) {
+            const [vx, vy] = vettoreDir(g.dir);
+            const forza = tasti[' '] ? 4.5 : 2.8;
+            palla.vx = vx * forza;
+            palla.vy = vy * forza;
+            palla.libera = true;
+            palla.blocco = 25;
+        }
+    }
+
+    // pallone
+    if (!palla.libera) {
+        // la palla resta ai piedi del giocatore, davanti a lui
+        const [vx, vy] = vettoreDir(g.dir);
+        palla.x += (g.x + vx * 7 - palla.x) * 0.35;
+        palla.y += (g.y - 3 + vy * 5 - palla.y) * 0.35;
+    } else {
+        palla.x += palla.vx;
+        palla.y += palla.vy;
+        palla.vx *= 0.97;
+        palla.vy *= 0.97;
+        if (palla.x < campo.x + 2 || palla.x > campo.x + campo.width - 2) {
+            palla.vx *= -1;
+            palla.x = clamp(palla.x, campo.x + 2, campo.x + campo.width - 2);
+        }
+        if (palla.y < campo.y - 8 || palla.y > campo.y + campo.height + 8) {
+            palla.vy *= -1;
+            palla.y = clamp(palla.y, campo.y - 8, campo.y + campo.height + 8);
+        }
+        if (palla.blocco > 0) palla.blocco--;
+        else if (Math.hypot(palla.vx, palla.vy) < 0.4 || vicino) {
+            if (vicino) { palla.libera = false; }
+        }
+    }
+
+    // gli altri giocatori guardano il pallone
+    [squadraCasa, squadraOspite].forEach(sq => {
+        sq.giocatori.forEach(p => {
+            if (p === g) return;
+            p.dir = direzioneVerso(palla.x - p.x, palla.y - p.y);
+        });
+    });
 }
 
 // --- RENDER ---
 function drawGame() {
     ctx.imageSmoothingEnabled = false;
-    muoviPalla();
+    aggiornaGiocoDiProva();
     aggiornaCamera();
 
     // Frame della folla: cambia ogni 450 ms
@@ -167,10 +315,10 @@ function drawGame() {
 
     // Giocatori ordinati per y, così quelli più in basso stanno davanti
     const tutti = [
-        ...squadraCasa.giocatori.map(g => ({ g, c: squadraCasa.colore })),
-        ...squadraOspite.giocatori.map(g => ({ g, c: squadraOspite.colore }))
+        ...squadraCasa.giocatori.map(g => ({ g, sq: squadraCasa })),
+        ...squadraOspite.giocatori.map(g => ({ g, sq: squadraOspite }))
     ].sort((p, q) => p.g.y - q.g.y);
-    tutti.forEach(p => disegnaGiocatore(p.g, p.c));
+    tutti.forEach(p => disegnaGiocatore(p.g, p.sq));
 
     // Pallone
     const px = Math.round(palla.x - camera.x);
@@ -297,6 +445,7 @@ btnPrevDiff.addEventListener('click', () => {
 btnStartMatch.addEventListener('click', () => {
     teamSelectScreen.classList.add('hidden');
     gameplayScreen.classList.remove('hidden');
+    preparaPartita();
     matchInfo.textContent = `${gameState.selectedTeam} | ${gameState.difficulty}`;
     avviaLoop();
 });
