@@ -2,68 +2,128 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monaci's League</title>
+    <!-- Font Pixel Art da Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="shell">
-        <!-- 1. MENU PRINCIPALE -->
-        <div id="main-menu">
-            <h1>MONACI'S LEAGUE</h1>
-            <p class="subtitle">ARCADE SOCCER</p>
-            <button class="arcade-btn" id="btn-play">GIOCA</button>
-            <button class="arcade-btn" id="btn-settings">IMPOSTAZIONI</button>
+    <!-- FASE 1: SCHERMATA PRINCIPALE (MENU) -->
+    <div id="main-menu" class="screen">
+        <header class="league-header">
+            <img src="logo.png" alt="Logo Monaci's League" class="game-logo">
+            <h1 class="gold-text">MONACI'S LEAGUE</h1>
+        </header>
+
+        <div class="menu-buttons">
+            <button id="btn-play" class="btn-gold">GIOCA</button>
+            <button id="btn-settings" class="btn-gold">IMPOSTAZIONI</button>
         </div>
+    </div>
 
-        <!-- 2. SELEZIONE SQUADRA -->
-        <div id="team-select-screen" class="hidden">
-            <h2>SCEGLI SQUADRA</h2>
-            <div class="carousel-box" id="team-box-border">
-                <button class="carousel-btn" id="btn-prev-team">&lt;</button>
-                <div class="team-info">
-                    <img id="current-team-logo" class="team-logo" src="" alt="Logo">
-                    <span id="current-team-name" class="team-name-text">FC POLAR</span>
-                </div>
-                <button class="carousel-btn" id="btn-next-team">&gt;</button>
-            </div>
-            <div class="counter-text" id="team-counter">1 / 6</div>
+    <!-- FASE 2: SCHERMATA SELEZIONE SQUADRA E DIFFICOLTÀ CON CAROSELLI -->
+    <div id="team-select-screen" class="screen hidden">
+        <h1 class="gold-text">PREPARAZIONE PARTITA</h1>
 
-            <h2>DIFFICOLTÀ</h2>
-            <div class="carousel-box">
-                <button class="carousel-btn" id="btn-prev-diff">&lt;</button>
-                <span id="current-diff-name" class="diff-name-text">MEDIO</span>
-                <button class="carousel-btn" id="btn-next-diff">&gt;</button>
-            </div>
-            <div class="counter-text" id="diff-counter">2 / 3</div>
-
-            <button class="arcade-btn" id="btn-start-match">INIZIA PARTITA</button>
-            <button class="arcade-btn btn-danger" id="btn-back-to-menu">INDIETRO</button>
-        </div>
-
-        <!-- 3. GAMEPLAY -->
-        <div id="gameplay-screen" class="hidden">
-            <div id="match-info" class="match-info-text">MONACI'S LEAGUE</div>
+        <!-- Sezione Selezione Squadra tramite Carosello -->
+        <div class="selection-section">
+            <h2 class="gold-subheading">SCEGLI LA TUA SQUADRA</h2>
             
-            <canvas id="game-canvas" width="340" height="400"></canvas>
-
-            <button class="arcade-btn btn-small" id="btn-back-to-select">ABBANDONA</button>
+            <div class="carousel-container">
+                <button id="btn-prev-team" class="btn-arrow">◀</button>
+                <div class="team-display-box" id="team-box-border">
+                    <img id="current-team-logo" src="" alt="Logo Squadra" class="team-carousel-logo">
+                    <span id="current-team-name" class="team-carousel-name">SQUADRA</span>
+                </div>
+                <button id="btn-next-team" class="btn-arrow">▶</button>
+            </div>
+            <p id="team-counter" class="team-counter-text">1 / 6</p>
         </div>
 
-        <!-- MODALE IMPOSTAZIONI -->
-        <div id="settings-modal" class="hidden">
-            <h2>IMPOSTAZIONI</h2>
-            <div class="setting-row">
-                <label>MUSICA: <span id="music-val">80%</span></label><br>
-                <input type="range" id="music-volume" min="0" max="100" value="80" class="range-input">
+        <!-- Sezione Selezione Difficoltà tramite Carosello -->
+        <div class="selection-section">
+            <h2 class="gold-subheading">DIFFICOLTÀ</h2>
+            
+            <div class="carousel-container">
+                <button id="btn-prev-diff" class="btn-arrow">◀</button>
+                <div class="team-display-box diff-display-box">
+                    <span id="current-diff-name" class="team-carousel-name diff-name-text">MEDIO</span>
+                </div>
+                <button id="btn-next-diff" class="btn-arrow">▶</button>
             </div>
-            <div class="setting-row">
-                <label>EFFETTI: <span id="sfx-val">100%</span></label><br>
-                <input type="range" id="sfx-volume" min="0" max="100" value="100" class="range-input">
-            </div>
-            <button class="arcade-btn" id="btn-close-settings">CHIUDI</button>
+            <p id="diff-counter" class="team-counter-text">2 / 3</p>
         </div>
+
+        <!-- Pulsanti di Azione -->
+        <div class="action-buttons">
+            <button id="btn-start-match" class="btn-gold">AVVIA PARTITA</button>
+            <button id="btn-back-to-menu" class="btn-gold">INDIETRO</button>
+        </div>
+    </div>
+
+    <!-- FASE 1: MODALE IMPOSTAZIONI -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="gold-text">IMPOSTAZIONI</h2>
+
+            <section class="settings-group">
+                <h3 class="gold-text">AUDIO</h3>
+                <div class="setting-item">
+                    <label for="music-volume">Musica:</label>
+                    <input type="range" id="music-volume" min="0" max="100" value="80">
+                    <span id="music-val">80%</span>
+                </div>
+                <div class="setting-item">
+                    <label for="sfx-volume">Effetti SFX:</label>
+                    <input type="range" id="sfx-volume" min="0" max="100" value="100">
+                    <span id="sfx-val">100%</span>
+                </div>
+            </section>
+
+            <section class="settings-group">
+                <h3 class="gold-text">CONTROLLI TASTIERA</h3>
+                <div class="controls-grid">
+                    <div><span>Spostamento:</span> <strong>Frecce / WASD</strong></div>
+                    <div><span>Azione / Tiro:</span> <strong>Spazio</strong></div>
+                    <div><span>Passaggio:</span> <strong>X</strong></div>
+                </div>
+            </section>
+
+            <section class="settings-group">
+                <h3 class="gold-text">CONTROLLI TOUCH (MOBILE)</h3>
+                <div class="setting-item">
+                    <label for="touch-toggle">Attiva Joypad Touch:</label>
+                    <input type="checkbox" id="touch-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="touch-size">Dimensione Tasti:</label>
+                    <select id="touch-size">
+                        <option value="small">Piccola</option>
+                        <option value="medium" selected>Media</option>
+                        <option value="large">Grande</option>
+                    </select>
+                </div>
+            </section>
+
+            <button id="btn-close-settings" class="btn-gold">SALVA E CHIUDI</button>
+        </div>
+    </div>
+
+    <!-- FASE 3: SCHERMATA GAMEPLAY CON CAMPO VERTICALE -->
+    <div id="gameplay-screen" class="screen hidden">
+        <header class="gameplay-header">
+            <span id="match-info" class="gold-subheading">SQUADRA vs CPU</span>
+            <div id="scoreboard" class="gold-text">0 - 0</div>
+        </header>
+
+        <!-- Campo da Gioco Verticale (Canvas 400x600) -->
+        <div class="field-container">
+            <canvas id="game-canvas" width="400" height="600"></canvas>
+        </div>
+
+        <button id="btn-back-to-select" class="btn-gold">ABBANDONA PARTITA</button>
     </div>
 
     <script src="script.js"></script>
