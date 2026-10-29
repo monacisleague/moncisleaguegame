@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Monaci's League - Arcade Soccer</title>
+    <title>Monaci's League</title>
     <style>
-        /* --- STILE PIXEL ART / BLACK AND GOLD ORIGINALE --- */
         * {
             box-sizing: border-box;
             user-select: none;
@@ -15,30 +14,29 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #050505;
+            background-color: #000;
             color: #ffd700;
             font-family: 'Courier New', Courier, monospace;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             overflow: hidden;
+            image-rendering: pixelated;
         }
 
         #shell {
             position: relative;
             width: 400px;
             height: 600px;
-            background-color: #000000;
+            background-color: #0c0c0c;
             border: 4px solid #ffd700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
             padding: 20px;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
         }
 
         .hidden {
@@ -48,67 +46,53 @@
         h1, h2 {
             margin: 0;
             text-align: center;
-            letter-spacing: 3px;
-            text-shadow: 3px 3px #221100;
-            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 2px;
         }
 
-        /* Pulsanti Arcade Pixelati */
         .arcade-btn {
-            background-color: #1a1a1a;
+            background-color: #111;
             color: #ffd700;
-            border: 4px solid #ffd700;
-            padding: 12px 24px;
+            border: 2px solid #ffd700;
+            padding: 10px 20px;
             font-size: 16px;
             font-weight: bold;
             font-family: 'Courier New', Courier, monospace;
             cursor: pointer;
             text-transform: uppercase;
-            box-shadow: 0 5px 0 #997a00;
-            transition: none;
-            width: 85%;
-            margin: 10px 0;
+            width: 80%;
+            margin: 8px 0;
             text-align: center;
         }
 
         .arcade-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 #997a00;
+            background-color: #ffd700;
+            color: #000;
         }
 
-        #main-menu {
+        #main-menu, #team-select-screen, #gameplay-screen, #settings-modal {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100%;
             width: 100%;
-        }
-
-        #team-select-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            align-items: center;
             height: 100%;
-            width: 100%;
         }
 
         .carousel-box {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #111111;
-            border: 3px solid #ffd700;
+            background: #111;
+            border: 2px solid #ffd700;
             width: 100%;
-            padding: 10px;
-            box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.2);
+            padding: 8px;
+            margin: 10px 0;
         }
 
         .carousel-btn {
             background: #ffd700;
             color: #000;
-            border: 2px solid #000;
+            border: none;
             font-weight: bold;
             font-size: 18px;
             padding: 4px 12px;
@@ -118,29 +102,19 @@
         .team-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
         .team-logo {
-            width: 48px;
-            height: 48px;
-            border: 2px solid #ffd700;
-            background: #1a1a1a;
-            image-rendering: pixelated;
-        }
-
-        #gameplay-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            height: 100%;
-            width: 100%;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ffd700;
+            background: #222;
         }
 
         #game-canvas {
-            background-color: #114411;
-            border: 4px solid #ffd700;
+            background-color: #1b5e20;
+            border: 2px solid #ffd700;
             image-rendering: pixelated;
         }
 
@@ -157,10 +131,10 @@
 
         #stick {
             position: absolute;
-            width: 80px; height: 80px;
+            width: 70px; height: 70px;
             border-radius: 50%;
-            border: 3px solid rgba(255, 215, 0, 0.7);
-            background: rgba(255, 215, 0, 0.15);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            background: rgba(255, 215, 0, 0.1);
             transform: translate(-50%, -50%);
             display: none;
             pointer-events: none;
@@ -168,39 +142,26 @@
         #stick.live { display: block; }
         #knob {
             position: absolute;
-            top: 18px; left: 18px;
-            width: 38px; height: 38px;
+            top: 15px; left: 15px;
+            width: 36px; height: 36px;
             border-radius: 50%;
-            border: 2px solid #000;
             background: #ffd700;
         }
 
         #pad {
             position: absolute;
-            bottom: 20px; right: 20px;
+            bottom: 15px; right: 15px;
             pointer-events: auto;
         }
 
         #keyhud {
             font-size: 10px;
             text-align: center;
-            color: #b39700;
-            font-family: 'Courier New', Courier, monospace;
-        }
-
-        #settings-modal {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 20;
+            color: #ffd700;
         }
 
         .setting-row {
-            margin: 15px 0;
+            margin: 10px 0;
             text-align: center;
             width: 80%;
         }
@@ -217,45 +178,45 @@
         <!-- 1. MENU PRINCIPALE -->
         <div id="main-menu">
             <h1>MONACI'S LEAGUE</h1>
-            <p style="font-size: 11px; color: #b39700; margin-bottom: 30px; letter-spacing: 1px;">RETRO ARCADE SOCCER</p>
+            <p style="font-size: 11px; color: #b39700; margin-bottom: 25px;">ARCADE SOCCER</p>
             <button class="arcade-btn" id="btn-play">GIOCA</button>
             <button class="arcade-btn" id="btn-settings">IMPOSTAZIONI</button>
         </div>
 
-        <!-- 2. SELEZIONE SQUADRA E DIFFICOLTÀ -->
+        <!-- 2. SELEZIONE SQUADRA -->
         <div id="team-select-screen" class="hidden">
             <h2>SCEGLI SQUADRA</h2>
             <div class="carousel-box" id="team-box-border">
                 <button class="carousel-btn" id="btn-prev-team">&lt;</button>
                 <div class="team-info">
                     <img id="current-team-logo" class="team-logo" src="" alt="Logo">
-                    <span id="current-team-name" style="font-size: 16px; font-weight: bold;">FC POLAR</span>
+                    <span id="current-team-name" style="font-size: 14px; font-weight: bold;">FC POLAR</span>
                 </div>
                 <button class="carousel-btn" id="btn-next-team">&gt;</button>
             </div>
-            <div style="font-size: 11px;" id="team-counter">1 / 6</div>
+            <div style="font-size: 10px;" id="team-counter">1 / 6</div>
 
             <h2>DIFFICOLTÀ</h2>
             <div class="carousel-box">
                 <button class="carousel-btn" id="btn-prev-diff">&lt;</button>
-                <span id="current-diff-name" style="font-size: 16px; font-weight: bold; width: 100%; text-align: center;">MEDIO</span>
+                <span id="current-diff-name" style="font-size: 14px; font-weight: bold; width: 100%; text-align: center;">MEDIO</span>
                 <button class="carousel-btn" id="btn-next-diff">&gt;</button>
             </div>
-            <div style="font-size: 11px;" id="diff-counter">2 / 3</div>
+            <div style="font-size: 10px;" id="diff-counter">2 / 3</div>
 
             <button class="arcade-btn" id="btn-start-match">INIZIA PARTITA</button>
-            <button class="arcade-btn" id="btn-back-to-menu" style="background: #2a0a0a; border-color: #ff4444; color: #ff4444; box-shadow: 0 5px 0 #880000;">INDIETRO</button>
+            <button class="arcade-btn" id="btn-back-to-menu" style="border-color: #ff4444; color: #ff4444;">INDIETRO</button>
         </div>
 
         <!-- 3. GAMEPLAY -->
         <div id="gameplay-screen" class="hidden">
-            <div id="match-info" style="font-size: 12px; font-weight: bold; letter-spacing: 1px;">MONACI'S LEAGUE | MEDIO</div>
+            <div id="match-info" style="font-size: 12px; font-weight: bold;">MONACI'S LEAGUE</div>
             
-            <canvas id="game-canvas" width="340" height="420"></canvas>
+            <canvas id="game-canvas" width="340" height="400"></canvas>
             
             <div id="keyhud"><span class="kh-keys"></span></div>
 
-            <button class="arcade-btn" id="btn-back-to-select" style="font-size: 11px; padding: 8px; width: 60%;">ABBANDONA</button>
+            <button class="arcade-btn" id="btn-back-to-select" style="font-size: 11px; padding: 6px; width: 50%;">ABBANDONA</button>
         </div>
 
         <!-- MODALE IMPOSTAZIONI -->
@@ -266,7 +227,7 @@
                 <input type="range" id="music-volume" min="0" max="100" value="80" style="width: 100%;">
             </div>
             <div class="setting-row">
-                <label>EFFETTI SONORI: <span id="sfx-val">100%</span></label><br>
+                <label>EFFETTI: <span id="sfx-val">100%</span></label><br>
                 <input type="range" id="sfx-volume" min="0" max="100" value="100" style="width: 100%;">
             </div>
             <button class="arcade-btn" id="btn-close-settings">CHIUDI</button>
@@ -277,4 +238,5 @@
     <script src="controls.js"></script>
     <script src="script.js"></script>
 </body>
-</html>
+                </html>
+                
