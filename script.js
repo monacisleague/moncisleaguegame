@@ -34,9 +34,9 @@ const sfxValDisplay = document.getElementById('sfx-val');
 
 // --- DATI SQUADRE MONACI'S LEAGUE ---
 const teamsList = [
-    { name: "FC POLAR", color: "#ffd700", logo: "polar.png" },
+    { name: "FC POLAR", color: "#ffffff", logo: "polar.png" },
     { name: "CALABRONI FC", color: "#0066ff", logo: "calabroni.png" },
-    { name: "DARK KNIGHTS", color: "#ffd700", logo: "darkknights.png" },
+    { name: "DARK KNIGHTS", color: "#1a1a1a", bordo: "#8a8a8a", logo: "darkknights.png" },
     { name: "FC BIRRAREAL", color: "#00cc44", logo: "birrareal.png" },
     { name: "KING LIONS FC", color: "#ff2222", logo: "kinglions.png" },
     { name: "GRIZZLY FC", color: "#ffcc00", logo: "grizzly.png" }
@@ -226,7 +226,7 @@ window.addEventListener('resize', aggiornaScala);
 function updateTeamDisplay() {
     const team = teamsList[currentTeamIndex];
     currentTeamName.textContent = team.name;
-    teamBoxBorder.style.borderColor = team.color;
+    teamBoxBorder.style.borderColor = team.bordo || team.color;
     teamCounter.textContent = `${currentTeamIndex + 1} / ${teamsList.length}`;
     
     gameState.selectedTeam = team.name;
