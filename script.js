@@ -1,4 +1,4 @@
-// Funzione globale richiesta dal sistema di controlli per sapere se siamo in partita
+// Funzione globale richiesta dal sistema di controlli per lo stato dell'app
 window.App = {
     settings: {
         controls: 'auto',
@@ -9,7 +9,6 @@ window.App = {
         return !gameplayScreen.classList.contains('hidden');
     },
     togglePause: function() {
-        // Gestione pausa di gioco (può essere espansa)
         console.log("Pausa attivata");
     },
     menuKey: function(e) {
@@ -17,20 +16,18 @@ window.App = {
     }
 };
 
-// Selezione Elementi Schermate
+// Selezione degli elementi dell'interfaccia
 const mainMenu = document.getElementById('main-menu');
 const settingsModal = document.getElementById('settings-modal');
 const teamSelectScreen = document.getElementById('team-select-screen');
 const gameplayScreen = document.getElementById('gameplay-screen');
 
-// Pulsanti Principali Menu
 const btnPlay = document.getElementById('btn-play');
 const btnSettings = document.getElementById('btn-settings');
 const btnCloseSettings = document.getElementById('btn-close-settings');
 const btnBackToMenu = document.getElementById('btn-back-to-menu');
 const btnStartMatch = document.getElementById('btn-start-match');
 
-// Elementi Carosello Squadre
 const btnPrevTeam = document.getElementById('btn-prev-team');
 const btnNextTeam = document.getElementById('btn-next-team');
 const currentTeamLogo = document.getElementById('current-team-logo');
@@ -38,25 +35,22 @@ const currentTeamName = document.getElementById('current-team-name');
 const teamBoxBorder = document.getElementById('team-box-border');
 const teamCounter = document.getElementById('team-counter');
 
-// Elementi Carosello Difficoltà
 const btnPrevDiff = document.getElementById('btn-prev-diff');
 const btnNextDiff = document.getElementById('btn-next-diff');
 const currentDiffName = document.getElementById('current-diff-name');
 const diffCounter = document.getElementById('diff-counter');
 
-// Elementi Gameplay
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 const matchInfo = document.getElementById('match-info');
 const btnBackToSelect = document.getElementById('btn-back-to-select');
 
-// Controlli Impostazioni
 const musicSlider = document.getElementById('music-volume');
 const musicValDisplay = document.getElementById('music-val');
 const sfxSlider = document.getElementById('sfx-volume');
 const sfxValDisplay = document.getElementById('sfx-val');
 
-// --- DATI SQUADRE E DIFFICOLTÀ ---
+// --- LISTA SQUADRE DELLA MONACI'S LEAGUE ---
 const teamsList = [
     { name: "FC POLAR", color: "#ffd700", logo: "polar.png" },
     { name: "CALABRONI FC", color: "#0066ff", logo: "calabroni.png" },
@@ -69,21 +63,20 @@ const teamsList = [
 const difficultiesList = ["FACILE", "MEDIO", "DIFFICILE"];
 
 let currentTeamIndex = 0;
-let currentDiffIndex = 1; // Parte da "MEDIO"
+let currentDiffIndex = 1; // Default: MEDIO
 
-// Stato Globale del Gioco
 const gameState = {
     selectedTeam: teamsList[0].name,
     difficulty: difficultiesList[1]
 };
 
-// --- GESTIONE IMMAGINE CAMPO ---
+// --- GESTIONE CAMPO (PITCH.PNG) ---
 const pitchImage = new Image();
 pitchImage.src = 'pitch.png';
 let pitchLoaded = false;
 pitchImage.onload = () => { pitchLoaded = true; };
 
-// Entità di gioco di prova (Giocatore controllabile con i tasti / joystick)
+// Giocatore di prova sul canvas
 const player = {
     x: 170,
     y: 210,
@@ -91,26 +84,25 @@ const player = {
     speed: 3
 };
 
-// --- LOOP DI GIOCO E INPUT ---
+// --- LOGICA DI GIOCO E INPUT ---
 function updateGame() {
-    // Leggiamo i comandi dal sistema esterno controls.js (Input)
     if (typeof Input !== 'undefined') {
         const inputState = Input.read();
         
-        // Muove il giocatore in base all'input (tastiera, joystick o gamepad)
+        // Movimento del giocatore tramite tastiera, joystick o gamepad
         if (inputState.move.x !== 0 || inputState.move.y !== 0) {
             let currentSpeed = inputState.sprint ? player.speed * 1.6 : player.speed;
             player.x += inputState.move.x * currentSpeed;
             player.y += inputState.move.y * currentSpeed;
 
-            // Mantieni il giocatore dentro i bordi del campo
+            // Limiti all'interno del campo
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
         }
 
-        // Gestione aggiornamento pulsanti touch dinamici (attacco/difesa)
+        // Aggiornamento dei pulsanti touch in base alla fase di gioco
         if (typeof Pad !== 'undefined') {
-            Pad.render('attack'); // Modalità attacco di esempio
+            Pad.render('attack');
         }
     }
 }
@@ -118,13 +110,12 @@ function updateGame() {
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Disegna l'immagine dello stadio se caricata, altrimenti fallback verde stile arcade
+    // Disegna lo sfondo del campo (pitch.png o fallback verde arcade)
     if (pitchLoaded) {
         ctx.drawImage(pitchImage, 0, 0, canvas.width, canvas.height);
     } else {
         ctx.fillStyle = '#1b5e20';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Linee campo di riserva
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
@@ -137,7 +128,7 @@ function drawGame() {
         ctx.stroke();
     }
 
-    // Disegna il giocatore sul campo (Pallino dorato stile Black & Gold)
+    // Disegna il giocatore sul campo (Stile Black & Gold)
     ctx.fillStyle = '#ffd700';
     ctx.beginPath();
     ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
@@ -155,7 +146,7 @@ function gameLoop() {
     }
 }
 
-// --- AGGIORNA VISUALIZZAZIONI CAROSELLI ---
+// --- GESTIONE CAROSELLO SQUADRE E DIFFICOLTÀ ---
 function updateTeamDisplay() {
     const team = teamsList[currentTeamIndex];
     currentTeamName.textContent = team.name;
@@ -179,7 +170,7 @@ function updateDiffDisplay() {
 updateTeamDisplay();
 updateDiffDisplay();
 
-// --- NAVIGAZIONE SCHERMATE ---
+// --- EVENTI NAVIGAZIONE MENU ---
 btnPlay.addEventListener('click', () => {
     mainMenu.classList.add('hidden');
     teamSelectScreen.classList.remove('hidden');
@@ -203,7 +194,7 @@ btnBackToSelect.addEventListener('click', () => {
     teamSelectScreen.classList.remove('hidden');
 });
 
-// Carosello Squadre
+// Frecce Carosello Squadre
 btnNextTeam.addEventListener('click', () => {
     currentTeamIndex = (currentTeamIndex + 1) % teamsList.length;
     updateTeamDisplay();
@@ -214,7 +205,7 @@ btnPrevTeam.addEventListener('click', () => {
     updateTeamDisplay();
 });
 
-// Carosello Difficoltà
+// Frecce Carosello Difficoltà
 btnNextDiff.addEventListener('click', () => {
     currentDiffIndex = (currentDiffIndex + 1) % difficultiesList.length;
     updateDiffDisplay();
@@ -233,7 +224,7 @@ btnStartMatch.addEventListener('click', () => {
     requestAnimationFrame(gameLoop);
 });
 
-// Impostazioni Audio
+// Gestione Slider Audio
 musicSlider.addEventListener('input', (e) => {
     musicValDisplay.textContent = `${e.target.value}%`;
 });
@@ -241,3 +232,4 @@ musicSlider.addEventListener('input', (e) => {
 sfxSlider.addEventListener('input', (e) => {
     sfxValDisplay.textContent = `${e.target.value}%`;
 });
+        
