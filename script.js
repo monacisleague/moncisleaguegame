@@ -148,6 +148,10 @@ const GOL_FESTA_SEC = 1.6;             // pausa dopo un gol
 let partita = null;
 let giocatoreUtente = null;     // il giocatore della tua squadra che stai controllando
 let bloccoCambioT = 0;
+let fiatoUtente = 100;          // resistenza per lo scatto (0-100)
+let affaticato = false;
+let jInizio = 0;                // da quando tieni premuto J (passaggio)
+const azioniCoda = [];          // azioni premute, eseguite al prossimo aggiornamento
 let bannerAttivo = null;
 let ultimoTick = 0;
 let hudCache = '';
@@ -171,7 +175,7 @@ function creaGiocatori(formazione, dirIniziale) {
         dir: dirIniziale, inMovimento: false, animT: 0, calcioT: 0,
         stato: 'fuori', tx: f.x, ty: f.y,
         mx: 0, my: dirIniziale === DIR.SU ? -1 : 1,   // ultima direzione di movimento
-        stun: 0, contrT: 0, pensaT: 0, tenutaT: 0
+        stun: 0, contrT: 0, pensaT: 0, tenutaT: 0, dribT: 0, dribCd: 0
     }));
 }
 
@@ -235,6 +239,10 @@ function preparaPartita() {
     squadraOspite.giocatori = creaGiocatori(FORMAZIONE_OSPITE, DIR.GIU);
     giocatoreUtente = squadraCasa.giocatori[3];
     bloccoCambioT = 0;
+    fiatoUtente = 100;
+    affaticato = false;
+    jInizio = 0;
+    azioniCoda.length = 0;
 
     partita = {
         minuto: 0, fase: 'gioco',          // fase: gioco | gol | shootout | fine
@@ -476,6 +484,21 @@ function disegnaGiocatore(g, squadra) {
         ctx.fillRect(x - 2, y - 26, 5, 1);
         ctx.fillRect(x - 1, y - 25, 3, 1);
         ctx.fillRect(x, y - 24, 1, 1);
+        // barra del fiato (si vede solo quando non è piena)
+        if (fiatoUtente < 100) {
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(x - 7, y + 4, 14, 3);
+            ctx.fillStyle = affaticato ? '#e03030' : '#ffd700';
+            ctx.fillRect(x - 6, y + 5, Math.round(12 * fiatoUtente / 100), 1);
+        }
+        // carica del passaggio lungo mentre tieni premuto J
+        if (jInizio > 0) {
+            const carica = Math.min(1, (performance.now() - jInizio) / TEMPO_PASSAGGIO_LUNGO);
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(x - 7, y - 32, 14, 3);
+            ctx.fillStyle = carica >= 1 ? '#ffd700' : '#ffffff';
+            ctx.fillRect(x - 6, y - 31, Math.round(12 * carica), 1);
+        }
     }
 }
 
@@ -490,22 +513,66 @@ function parametriIA(sq) {
     return DIFFICOLTA.MEDIO;
 }
 
-// --- COMANDI: frecce/WASD = muovi, Spazio = tiro (o contrasto senza palla), X = passaggio, Tab = cambia giocatore ---
-// Tasti di test: J = gol per te, K = gol avversario, L = avanza di un minuto
+// --- COMANDI DA TASTIERA ---
+// WASD / frecce = muovi | Shift = scatto | J = passaggio (tieni premuto = passaggio lungo)
+// Spazio = contrasto | K = tiro | L = rinvio lungo del portiere | I = dribbling | Q = cambia giocatore
+// Tasti di prova (da togliere): 7 = gol per te, 8 = gol avversario, 9 = avanza di un minuto
 const tasti = {};
+const TEMPO_PASSAGGIO_LUNGO = 300;     // ms di pressione di J per il passaggio lungo
 window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     tasti[k] = true;
     if (gameplayScreen.classList.contains('hidden') || !partita) return;
-    if (k === 'tab') e.preventDefault();       // Tab non deve spostare il focus della pagina
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     if (e.repeat || partita.fase !== 'gioco') return;
-    if (k === 'j') golRilevato(true, true);
-    if (k === 'k') golRilevato(false, true);
-    if (k === 'l') partita.minuto = Math.floor(partita.minuto) + 1 - 0.001;
-    if (k === 'tab') cambiaGiocatore();
+    if (k === 'j') jInizio = performance.now();
+    if (k === 'k') azioniCoda.push({ a: 'tiro' });
+    if (k === 'l') azioniCoda.push({ a: 'rinvio' });
+    if (k === 'i') azioniCoda.push({ a: 'dribbling' });
+    if (k === ' ') azioniCoda.push({ a: 'contrasto' });
+    if (k === 'q') cambiaGiocatore();
+    if (k === '7') golRilevato(true, true);
+    if (k === '8') golRilevato(false, true);
+    if (k === '9') partita.minuto = Math.floor(partita.minuto) + 1 - 0.001;
+    if (azioniCoda.length > 6) azioniCoda.shift();
 });
-window.addEventListener('keyup', (e) => { tasti[e.key.toLowerCase()] = false; });
+window.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    tasti[k] = false;
+    if (k === 'j' && jInizio > 0) {
+        if (partita && partita.fase === 'gioco') {
+            azioniCoda.push({ a: 'passaggio', lungo: performance.now() - jInizio >= TEMPO_PASSAGGIO_LUNGO });
+        }
+        jInizio = 0;
+    }
+});
+
+// Elenco dei comandi nelle impostazioni (così non serve modificare index.html)
+(function aggiornaElencoComandi() {
+    const griglia = document.querySelector('.controls-grid');
+    if (!griglia) return;
+    const comandi = [
+        ['Movimento', 'WASD / Frecce'],
+        ['Scatto', 'Shift'],
+        ['Passaggio', 'J (tieni premuto: lungo)'],
+        ['Tiro', 'K'],
+        ['Contrasto', 'Spazio'],
+        ['Dribbling', 'I'],
+        ['Rinvio lungo portiere', 'L'],
+        ['Cambia giocatore', 'Q']
+    ];
+    griglia.innerHTML = '';
+    comandi.forEach(([nome, tasto]) => {
+        const riga = document.createElement('div');
+        const sp = document.createElement('span');
+        sp.textContent = nome + ': ';
+        const st = document.createElement('strong');
+        st.textContent = tasto;
+        riga.appendChild(sp);
+        riga.appendChild(st);
+        griglia.appendChild(riga);
+    });
+})();
 
 // Giocatori che entrano o escono camminando dal bordo campo a centrocampo
 function muoviComparsa(p) {
@@ -574,11 +641,11 @@ function calcia(p, vx, vy) {
     p.my = vy / Math.hypot(vx, vy);
 }
 
-function passaA(p, q, errore) {
+function passaA(p, q, errore, vMax) {
     const dx = q.x - p.x, dy = q.y - p.y;
     const dist = Math.hypot(dx, dy);
     const ang = Math.atan2(dy, dx) + (Math.random() - 0.5) * 2 * errore;
-    const v = clamp(dist / 30, 2.2, 5);
+    const v = clamp(dist / 30, 2.2, vMax || 5);
     calcia(p, Math.cos(ang) * v, Math.sin(ang) * v);
 }
 
@@ -728,7 +795,7 @@ function aggiornaGiocatoreIA(p, sq) {
         if (titolare && titolare.ruolo !== 'POR' && distPalla < 12 && p.contrT <= 0 && titolare.stun <= 0) {
             p.contrT = 45;
             p.calcioT = 8;
-            if (Math.random() < par.contrasto) {
+            if (Math.random() < par.contrasto && !(titolare.dribT > 0)) {
                 titolare.stun = 25;
                 prendiPalla(p);
             }
@@ -776,7 +843,7 @@ function sceltaGiocatoreUtente() {
     else if (distDallaPalla(lista[0]) + 14 < distDallaPalla(giocatoreUtente)) giocatoreUtente = lista[0];
 }
 
-// Manuale (tasto Tab): passa al giocatore successivo in un ordine fisso (difensore, difensore, attaccante)
+// Manuale (tasto Q): passa al giocatore successivo in un ordine fisso (difensore, difensore, attaccante)
 function cambiaGiocatore() {
     if (palla.titolare && squadraDi(palla.titolare) === squadraCasa) return;   // con la palla non si cambia
     const lista = inCampo(squadraCasa).filter(q => q.ruolo !== 'POR').sort((a, b) => a.slot - b.slot);
@@ -838,15 +905,32 @@ function aggiornaGiocoDiProva() {
     if (tasti['arrowup'] || tasti['w']) dy -= 1;
     if (tasti['arrowdown'] || tasti['s']) dy += 1;
     if (g.stun > 0) { g.stun--; dx = 0; dy = 0; }
+    if (g.dribT > 0) g.dribT--;
+    if (g.dribCd > 0) g.dribCd--;
 
-    if (dx !== 0 || dy !== 0) {
+    const inMov = dx !== 0 || dy !== 0;
+    // velocità: normale, scatto (Shift, consuma fiato) o dribbling (breve accelerazione)
+    let velocita = 1.2;
+    let scattando = false;
+    if (inMov && tasti['shift'] && fiatoUtente > 0 && !affaticato && g.ruolo !== 'POR') {
+        velocita = 1.65;
+        scattando = true;
+        fiatoUtente = Math.max(0, fiatoUtente - 0.7);
+        if (fiatoUtente <= 0) affaticato = true;
+    } else {
+        fiatoUtente = Math.min(100, fiatoUtente + 0.4);
+        if (affaticato && fiatoUtente >= 25) affaticato = false;
+    }
+    if (g.dribT > 0) velocita = 2.0;
+
+    if (inMov) {
         const len = Math.hypot(dx, dy);
         g.mx = dx / len; g.my = dy / len;
-        g.x += g.mx * 1.3;
-        g.y += g.my * 1.3;
+        g.x += g.mx * velocita;
+        g.y += g.my * velocita;
         g.dir = direzioneVerso(dx, dy);
         g.inMovimento = true;
-        g.animT++;
+        g.animT += (scattando || g.dribT > 0) ? 1.6 : 1;
     } else {
         g.inMovimento = false;
     }
@@ -862,6 +946,7 @@ function aggiornaGiocoDiProva() {
     const titolare = palla.titolare;
     const palleggio = titolare === g;
     const vicinaLibera = !titolare && Math.hypot(palla.x - g.x, palla.y - (g.y - 3)) < 12;
+    const hoLaPalla = palleggio || vicinaLibera;
 
     // il portiere che tieni in mano la palla deve rilanciare entro qualche secondo
     if (g.ruolo === 'POR' && palleggio) {
@@ -872,33 +957,47 @@ function aggiornaGiocoDiProva() {
         }
     }
 
-    if ((tasti[' '] || tasti['x']) && g.calcioT === 0 && g.stun === 0 && partita.fase === 'gioco') {
-        g.calcioT = 10;
-        if (palleggio || vicinaLibera) {
-            if (tasti[' ']) {
-                calcia(g, g.mx * 4.5, g.my * 4.5);                // tiro (o rinvio lungo del portiere)
-            } else {
-                // passaggio: verso il compagno più in linea con la direzione in cui guardi
-                let dest = null, migliore = 0.6;
-                inCampo(squadraCasa).forEach(q => {
-                    if (q === g) return;
-                    const ddx = q.x - g.x, ddy = q.y - g.y;
-                    const dd = Math.hypot(ddx, ddy);
-                    if (dd < 25 || dd > 220) return;
-                    const coseno = (ddx * g.mx + ddy * g.my) / dd;
-                    if (coseno > migliore) { migliore = coseno; dest = q; }
-                });
-                if (dest) passaA(g, dest, 0);
-                else calcia(g, g.mx * 2.8, g.my * 2.8);
-            }
-        } else if (tasti[' '] && titolare && squadraDi(titolare) !== squadraCasa && titolare.ruolo !== 'POR' &&
-                   Math.hypot(titolare.x - g.x, titolare.y - g.y) < 14) {
-            // contrasto: senza palla Spazio prova a rubarla
-            if (Math.random() < 0.55) {
-                titolare.stun = 25;
-                prendiPalla(g);
-            } else {
-                g.stun = 12;
+    // azioni premute dall'ultimo aggiornamento
+    while (azioniCoda.length > 0) {
+        const az = azioniCoda.shift();
+        if (g.stun > 0) continue;
+        if (az.a === 'tiro' && hoLaPalla && g.calcioT === 0) {
+            g.calcioT = 10;
+            if (g.ruolo === 'POR') calcia(g, g.mx * 7, g.my * 7);      // il portiere rinvia lungo
+            else calcia(g, g.mx * 4.8, g.my * 4.8);
+        } else if (az.a === 'rinvio' && hoLaPalla && g.ruolo === 'POR' && g.calcioT === 0) {
+            g.calcioT = 10;
+            calcia(g, g.mx * 7, g.my * 7);
+        } else if (az.a === 'passaggio' && hoLaPalla && g.calcioT === 0) {
+            g.calcioT = 10;
+            // verso il compagno più in linea con la direzione in cui guardi (più lontano se lungo)
+            const lungo = !!az.lungo;
+            const dMin = lungo ? 100 : 25, dMax = lungo ? 380 : 220;
+            let dest = null, migliore = lungo ? 0.45 : 0.6;
+            inCampo(squadraCasa).forEach(q => {
+                if (q === g) return;
+                const ddx = q.x - g.x, ddy = q.y - g.y;
+                const dd = Math.hypot(ddx, ddy);
+                if (dd < dMin || dd > dMax) return;
+                const coseno = (ddx * g.mx + ddy * g.my) / dd;
+                if (coseno > migliore) { migliore = coseno; dest = q; }
+            });
+            if (dest) passaA(g, dest, 0, lungo ? 8 : 5);
+            else calcia(g, g.mx * (lungo ? 7 : 2.8), g.my * (lungo ? 7 : 2.8));
+        } else if (az.a === 'dribbling' && palleggio && g.dribCd === 0 && g.ruolo !== 'POR') {
+            g.dribT = 14;       // breve scatto: in questo tempo non ti rubano la palla
+            g.dribCd = 50;
+        } else if (az.a === 'contrasto' && g.contrT === 0) {
+            g.contrT = 30;
+            if (titolare && squadraDi(titolare) !== squadraCasa && titolare.ruolo !== 'POR' &&
+                Math.hypot(titolare.x - g.x, titolare.y - g.y) < 14) {
+                g.calcioT = 8;
+                if (Math.random() < 0.55 && !(titolare.dribT > 0)) {
+                    titolare.stun = 25;
+                    prendiPalla(g);
+                } else {
+                    g.stun = 12;
+                }
             }
         }
     }
