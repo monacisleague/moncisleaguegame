@@ -490,19 +490,20 @@ function parametriIA(sq) {
     return DIFFICOLTA.MEDIO;
 }
 
-// --- COMANDI: frecce/WASD = muovi, Spazio = tiro (o contrasto senza palla), X = passaggio, C = cambia giocatore ---
+// --- COMANDI: frecce/WASD = muovi, Spazio = tiro (o contrasto senza palla), X = passaggio, Tab = cambia giocatore ---
 // Tasti di test: J = gol per te, K = gol avversario, L = avanza di un minuto
 const tasti = {};
 window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     tasti[k] = true;
     if (gameplayScreen.classList.contains('hidden') || !partita) return;
+    if (k === 'tab') e.preventDefault();       // Tab non deve spostare il focus della pagina
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     if (e.repeat || partita.fase !== 'gioco') return;
     if (k === 'j') golRilevato(true, true);
     if (k === 'k') golRilevato(false, true);
     if (k === 'l') partita.minuto = Math.floor(partita.minuto) + 1 - 0.001;
-    if (k === 'c' || k === 'v') cambiaGiocatore();
+    if (k === 'tab') cambiaGiocatore();
 });
 window.addEventListener('keyup', (e) => { tasti[e.key.toLowerCase()] = false; });
 
@@ -650,6 +651,7 @@ function aggiornaGiocatoreIA(p, sq) {
     const porta = portaAvversaria(sq);
     const su = sq === squadraCasa;
     const propria = { x: centroX, y: su ? campo.y + campo.height : campo.y };
+    const fuori = inCampo(sq).filter(q => q.ruolo !== 'POR');   // giocatori di movimento della mia squadra
     const tempo = performance.now() / 1000;
     const respiro = (fase) => Math.sin(tempo * 1.3 + p.slot * 2.1 + fase) * 4;   // piccoli movimenti naturali
 
@@ -658,8 +660,12 @@ function aggiornaGiocatoreIA(p, sq) {
         p.pensaT--;
         const dxp = porta.x - p.x, dyp = porta.y - p.y;
         const dist = Math.hypot(dxp, dyp);
+        const compagniVicini = fuori.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 85).length;
+        const compagniNecessari = Math.min(2, fuori.length - 1);
+        const soloAvanti = compagniVicini < compagniNecessari;             // la squadra non è ancora salita: aspetto
         const tiroPossibile = dist < 150 && zonaTiroValida(sq, p.x, p.y);
-        if (tiroPossibile && p.pensaT <= 0) {
+        const haAspettato = p.pensaT < -150;                                // dopo ~2,5 s tira comunque
+        if (tiroPossibile && p.pensaT <= 0 && (!soloAvanti || dist < 95 || haAspettato)) {
             const bersaglioX = porta.x + (Math.random() - 0.5) * 30;
             const ang = Math.atan2(porta.y - p.y, bersaglioX - p.x) + (Math.random() - 0.5) * 2 * par.errore;
             const v = 4.6;
@@ -682,12 +688,13 @@ function aggiornaGiocatoreIA(p, sq) {
             const l = Math.hypot(vx, vy);
             vx /= l; vy /= l;
         }
-        muoviVerso(p, p.x + vx * 10, p.y + vy * 10, par.vel * 0.95);
+        // se i compagni sono lontani rallento, così la squadra sale insieme
+        const velDribbling = par.vel * ((soloAvanti && dist > 95) ? 0.45 : 0.95);
+        muoviVerso(p, p.x + vx * 10, p.y + vy * 10, velDribbling);
         return;
     }
 
     const titolare = palla.titolare;
-    const fuori = inCampo(sq).filter(q => q.ruolo !== 'POR');   // giocatori di movimento della mia squadra
 
     // 2) LA MIA SQUADRA HA LA PALLA: mi smarco (uno più avanti, uno più largo)
     if (titolare && squadraDi(titolare) === sq) {
@@ -697,10 +704,15 @@ function aggiornaGiocatoreIA(p, sq) {
         const ordinePerAvanzamento = altri.slice().sort((q1, q2) => su ? q1.y - q2.y : q2.y - q1.y);
         const avanti = ordinePerAvanzamento[0] === p;
         let tx = clamp(titolare.x + lato * 60, campo.x + 25, campo.x + campo.width - 25);
-        let ty = titolare.y + (su ? -1 : 1) * (avanti ? 65 : 25);
+        let ty = titolare.y + (su ? -1 : 1) * (avanti ? 55 : 20);
+        if (titolare.ruolo === 'POR') {
+            // palla al portiere: la squadra si apre a centrocampo
+            ty = centroY + (su ? 1 : -1) * (avanti ? 10 : 70);
+        }
         const limite = su ? campo.y + 45 : campo.y + campo.height - 45;
         ty = su ? Math.max(ty, limite) : Math.min(ty, limite);
-        if (!muoviVerso(p, tx + respiro(0), ty + respiro(1), par.vel * 0.9)) p.dir = direzioneVerso(palla.x - p.x, palla.y - p.y);
+        // scatto: i compagni sono più veloci di chi porta palla, così lo raggiungono
+        if (!muoviVerso(p, tx + respiro(0), ty + respiro(1), par.vel * 1.2)) p.dir = direzioneVerso(palla.x - p.x, palla.y - p.y);
         return;
     }
 
@@ -739,7 +751,7 @@ function aggiornaGiocatoreIA(p, sq) {
         ty = propria.y + (rif.y - propria.y) * 0.5;
         ty = su ? clamp(ty, centroY + 30, propria.y - 45) : clamp(ty, propria.y + 45, centroY - 30);
     }
-    if (!muoviVerso(p, tx + respiro(2), ty + respiro(3), par.vel * 0.9)) p.dir = direzioneVerso(palla.x - p.x, palla.y - p.y);
+    if (!muoviVerso(p, tx + respiro(2), ty + respiro(3), par.vel * 1.05)) p.dir = direzioneVerso(palla.x - p.x, palla.y - p.y);
 }
 
 // --- SCELTA DEL GIOCATORE CHE CONTROLLI ---
@@ -764,13 +776,13 @@ function sceltaGiocatoreUtente() {
     else if (distDallaPalla(lista[0]) + 14 < distDallaPalla(giocatoreUtente)) giocatoreUtente = lista[0];
 }
 
-// Manuale (tasto C): passa al giocatore successivo, dal più vicino al pallone
+// Manuale (tasto Tab): passa al giocatore successivo in un ordine fisso (difensore, difensore, attaccante)
 function cambiaGiocatore() {
     if (palla.titolare && squadraDi(palla.titolare) === squadraCasa) return;   // con la palla non si cambia
-    const lista = giocatoriDiMovimentoCasa();
+    const lista = inCampo(squadraCasa).filter(q => q.ruolo !== 'POR').sort((a, b) => a.slot - b.slot);
     if (lista.length < 2) return;
     const i = lista.indexOf(giocatoreUtente);
-    giocatoreUtente = lista[(i + 1) % lista.length];
+    giocatoreUtente = i === -1 ? giocatoriDiMovimentoCasa()[0] : lista[(i + 1) % lista.length];
     bloccoCambioT = 90;
 }
 
