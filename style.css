@@ -310,14 +310,43 @@ h1 {
     flex: none;
 }
 
-/* Pulsante abbandona: in alto a destra, stesso stile oro degli altri tasti */
+/* Il vecchio pulsante "abbandona" non si vede più: ora sta nel menu di pausa */
 #btn-back-to-select {
+    display: none !important;
+}
+
+/* Pulsante di pausa (II) in alto a destra */
+#btn-pausa {
     position: absolute;
     top: 8px;
     right: calc(8px + var(--margine-hud, 0px));
-    z-index: 2;
+    z-index: 6;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Menu di pausa: solo impostazioni e abbandona */
+#menu-pausa {
+    position: absolute;
+    top: 60px;
+    right: calc(8px + var(--margine-hud, 0px));
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    background: #0d0d0d;
+    border: 3px solid #ffd700;
+    box-shadow: 4px 4px 0px #8b6508;
+}
+#menu-pausa .btn-gold {
     font-size: 8px;
-    padding: 8px 10px;
+    padding: 10px 12px;
 }
 
 /* Utility per nascondere elementi */
@@ -437,14 +466,14 @@ h1 {
     bottom: calc(124px * var(--ts));
 }
 #tbtn-speciale {
-    right: calc(88px * var(--ts));
-    bottom: calc(166px * var(--ts));
+    right: calc(22px * var(--ts));
+    bottom: calc(190px * var(--ts));
 }
 
 /* tasto con le due frecce che cambia tra CARTA e RIGORE PRESIDENZIALE */
 .tbtn-micro {
-    right: calc(150px * var(--ts));
-    bottom: calc(178px * var(--ts));
+    right: calc(84px * var(--ts));
+    bottom: calc(200px * var(--ts));
     width: calc(34px * var(--ts));
     height: calc(34px * var(--ts));
     font-size: calc(7px * var(--ts));
