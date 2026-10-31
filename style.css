@@ -324,3 +324,128 @@ h1 {
 .hidden {
     display: none !important;
 }
+
+/* --- CONTROLLI TOUCH (TELEFONO) --- */
+#gameplay-screen {
+    touch-action: none;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+#touch-ui {
+    --ts: 1;                       /* scala dei pulsanti: piccola 0.8, media 1, grande 1.2 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    pointer-events: none;          /* passano solo i tocchi sui pulsanti */
+    touch-action: none;
+}
+#touch-ui.small { --ts: 0.8; }
+#touch-ui.medium { --ts: 1; }
+#touch-ui.large { --ts: 1.2; }
+#touch-ui > * { pointer-events: auto; }
+
+/* Joystick analogico */
+#joy-base {
+    position: absolute;
+    left: calc(14px * var(--ts));
+    bottom: calc(22px * var(--ts));
+    width: calc(124px * var(--ts));
+    height: calc(124px * var(--ts));
+    border-radius: 50%;
+    border: 3px solid #ffd700;
+    background: rgba(13, 13, 13, 0.55);
+    box-shadow: 3px 3px 0px #8b6508;
+    touch-action: none;
+}
+#joy-stick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(52px * var(--ts));
+    height: calc(52px * var(--ts));
+    border-radius: 50%;
+    background: #ffd700;
+    border: 3px solid #b8860b;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+/* Pulsanti rotondi: stesso stile dei tasti oro del sito */
+.tbtn {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+    border: 3px solid #ffd700;
+    background-color: #1a1a1a;
+    /* riempimento che sale quando tieni premuto (carica di tiro e passaggio) */
+    background-image: linear-gradient(to top, rgba(255, 215, 0, 0.55) var(--carica, 0%), transparent var(--carica, 0%));
+    color: #ffd700;
+    box-shadow: 3px 3px 0px #8b6508;
+    font-family: 'Press Start 2P', cursive;
+    line-height: 1.35;
+    text-align: center;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.tbtn.premuto {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #8b6508;
+}
+.tbtn.pronto { background-color: #4d3f00; }
+.tbtn.spento { opacity: 0.4; }
+
+.tbtn-grande {
+    right: calc(14px * var(--ts));
+    bottom: calc(30px * var(--ts));
+    width: calc(84px * var(--ts));
+    height: calc(84px * var(--ts));
+    font-size: calc(10px * var(--ts));
+}
+.tbtn-grande.lungo { font-size: calc(7px * var(--ts)); }
+
+.tbtn-medio {
+    width: calc(68px * var(--ts));
+    height: calc(68px * var(--ts));
+    font-size: calc(6px * var(--ts));
+}
+#tbtn-passaggio {
+    right: calc(106px * var(--ts));
+    bottom: calc(16px * var(--ts));
+}
+#tbtn-dribbling {
+    right: calc(100px * var(--ts));
+    bottom: calc(90px * var(--ts));
+}
+
+.tbtn-piccolo {
+    width: calc(54px * var(--ts));
+    height: calc(54px * var(--ts));
+    font-size: calc(6px * var(--ts));
+}
+#tbtn-cambia {
+    right: calc(22px * var(--ts));
+    bottom: calc(124px * var(--ts));
+}
+#tbtn-speciale {
+    right: calc(88px * var(--ts));
+    bottom: calc(166px * var(--ts));
+}
+
+/* tasto con le due frecce che cambia tra CARTA e RIGORE PRESIDENZIALE */
+.tbtn-micro {
+    right: calc(150px * var(--ts));
+    bottom: calc(178px * var(--ts));
+    width: calc(34px * var(--ts));
+    height: calc(34px * var(--ts));
+    font-size: calc(7px * var(--ts));
+}
