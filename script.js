@@ -1581,3 +1581,17 @@ document.getElementById('btn-pausa-abbandona').addEventListener('click', () => {
     impostaPausa(false);
     btnBackToSelect.click();        // stesso comportamento del vecchio pulsante: torna alla scelta della squadra
 });
+
+
+// =====================================================================
+// CAMPIONATO (per ora solo avviso: ci stiamo lavorando)
+// =====================================================================
+const btnCampionato = document.getElementById('btn-campionato');
+const comingSoonModal = document.getElementById('coming-soon-modal');
+const btnCloseComingSoon = document.getElementById('btn-close-coming-soon');
+if (btnCampionato && comingSoonModal) {
+    btnCampionato.addEventListener('click', () => comingSoonModal.classList.remove('hidden'));
+}
+if (btnCloseComingSoon && comingSoonModal) {
+    btnCloseComingSoon.addEventListener('click', () => comingSoonModal.classList.add('hidden'));
+}
