@@ -250,6 +250,14 @@ h1 {
     gap: 8px;
 }
 
+/* Messaggio centrato nelle finestre (es. "stiamo arrivando") */
+.messaggio-modale {
+    font-size: 11px;
+    line-height: 1.8;
+    color: #ffffff;
+    text-align: center;
+}
+
 /* --- FASE 3: STILE GAMEPLAY E CAMPO VERTICALE (a tutto schermo, senza bordi) --- */
 #gameplay-screen {
     position: fixed;
