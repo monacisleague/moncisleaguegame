@@ -153,6 +153,7 @@ let fiatoUtente = 100;          // resistenza per lo scatto (0-100)
 let affaticato = false;
 let jInizio = 0;                // da quando tieni premuto J (passaggio)
 const azioniCoda = [];          // azioni premute, eseguite al prossimo aggiornamento
+let inPausa = false;             // partita in pausa (menu aperto)
 let kInizio = 0;                // da quando tieni premuto TIRO sul telefono (serve per la potenza)
 const joy = { attivo: false, x: 0, y: 0 };          // joystick analogico, valori da -1 a 1
 let modoSpeciale = 'carta';     // il tasto speciale può essere 'carta' o 'rigore'
@@ -251,6 +252,7 @@ function preparaPartita() {
     jInizio = 0;
     kInizio = 0;
     joy.attivo = false; joy.x = 0; joy.y = 0;
+    impostaPausa(false);
     azioniCoda.length = 0;
 
     partita = {
@@ -541,6 +543,8 @@ window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     tasti[k] = true;
     if (gameplayScreen.classList.contains('hidden') || !partita) return;
+    if ((k === 'escape' || k === 'p') && !e.repeat) { impostaPausa(!inPausa); return; }
+    if (inPausa) return;
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     if (e.repeat || partita.fase !== 'gioco') return;
     if (k === 'j') iniziaPassaggio();
@@ -1154,10 +1158,12 @@ function drawGame() {
     const dt = Math.min(0.05, (ora - ultimoTick) / 1000);   // se la scheda va in background il tempo non salta
     ultimoTick = ora;
 
-    aggiornaPartita(dt);
-    aggiornaGiocoDiProva();
-    aggiornaComparse();
-    aggiornaCamera();
+    if (!inPausa) {
+        aggiornaPartita(dt);
+        aggiornaGiocoDiProva();
+        aggiornaComparse();
+        aggiornaCamera();
+    }
     aggiornaHud();
     aggiornaTouchUi();
 
@@ -1191,8 +1197,13 @@ function drawGame() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(px - 2, py - 2, 4, 4);
 
-    disegnaBanner();
+    if (!inPausa) disegnaBanner();
     if (partita.fase === 'fine') disegnaFinePartita();
+    if (inPausa) {
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        testoCentrato('PAUSA', Math.round(VIEW_H * 0.3), 14, '#ffd700');
+    }
 }
 
 let loopAttivo = false;
@@ -1380,7 +1391,7 @@ function collegaPulsante(el, giu, su) {
         e.preventDefault();
         try { el.setPointerCapture(e.pointerId); } catch (err) { /* ok */ }
         el.classList.add('premuto');
-        if (partita && partita.fase === 'gioco') giu();
+        if (partita && partita.fase === 'gioco' && !inPausa) giu();
     });
     const rilascia = () => {
         if (!el.classList.contains('premuto')) return;
@@ -1441,6 +1452,7 @@ function joyRilascia() {
 }
 joyBase.addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    if (inPausa) return;
     joyPointerId = e.pointerId;
     try { joyBase.setPointerCapture(e.pointerId); } catch (err) { /* ok */ }
     joyAggiorna(e);
@@ -1528,3 +1540,44 @@ function applicaTouch() {
     }
     applicaTouch();
 })();
+
+
+// =====================================================================
+// PAUSA E MENU DI PAUSA (telefono e PC)
+// =====================================================================
+const btnPausa = document.createElement('button');
+btnPausa.type = 'button';
+btnPausa.id = 'btn-pausa';
+btnPausa.className = 'btn-gold';
+btnPausa.textContent = 'II';
+gameplayScreen.appendChild(btnPausa);
+
+const menuPausa = document.createElement('div');
+menuPausa.id = 'menu-pausa';
+menuPausa.className = 'hidden';
+menuPausa.innerHTML =
+    '<button type="button" id="btn-pausa-impostazioni" class="btn-gold">IMPOSTAZIONI</button>' +
+    '<button type="button" id="btn-pausa-abbandona" class="btn-gold">ABBANDONA PARTITA</button>';
+gameplayScreen.appendChild(menuPausa);
+
+function impostaPausa(valore) {
+    inPausa = !!valore;
+    menuPausa.classList.toggle('hidden', !inPausa);
+    btnPausa.textContent = inPausa ? '\u25B6' : 'II';      // II = metti in pausa, ▶ = riprendi
+    if (inPausa) {
+        joyRilascia();
+        kInizio = 0;
+        jInizio = 0;
+        azioniCoda.length = 0;
+    }
+    ultimoTick = performance.now();
+}
+
+btnPausa.addEventListener('click', () => { if (partita) impostaPausa(!inPausa); });
+document.getElementById('btn-pausa-impostazioni').addEventListener('click', () => {
+    settingsModal.classList.remove('hidden');
+});
+document.getElementById('btn-pausa-abbandona').addEventListener('click', () => {
+    impostaPausa(false);
+    btnBackToSelect.click();        // stesso comportamento del vecchio pulsante: torna alla scelta della squadra
+});
