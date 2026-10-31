@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
- 
+
     <!-- FASE 1: SCHERMATA PRINCIPALE (MENU) -->
     <div id="main-menu" class="screen">
         <header class="league-header">
@@ -21,11 +21,11 @@
             <button id="btn-settings" class="btn-gold">IMPOSTAZIONI</button>
         </div>
     </div>
- 
+
     <!-- FASE 2: SCHERMATA SELEZIONE SQUADRA E DIFFICOLTÀ CON CAROSELLI -->
     <div id="team-select-screen" class="screen hidden">
         <h1 class="gold-text">PREPARAZIONE PARTITA</h1>
- 
+
         <!-- Sezione Selezione Squadra tramite Carosello -->
         <div class="selection-section">
             <h2 class="gold-subheading">SCEGLI LA TUA SQUADRA</h2>
@@ -39,7 +39,7 @@
             </div>
             <p id="team-counter" class="team-counter-text">1 / 6</p>
         </div>
- 
+
         <!-- Sezione Selezione Difficoltà tramite Carosello -->
         <div class="selection-section">
             <h2 class="gold-subheading">DIFFICOLTÀ</h2>
@@ -52,19 +52,29 @@
             </div>
             <p id="diff-counter" class="team-counter-text">2 / 3</p>
         </div>
- 
+
         <!-- Pulsanti di Azione -->
         <div class="action-buttons">
-            <button id="btn-start-match" class="btn-gold">AVVIA PARTITA</button>
+            <button id="btn-start-match" class="btn-gold">AMICHEVOLE</button>
+            <button id="btn-campionato" class="btn-gold">CAMPIONATO</button>
             <button id="btn-back-to-menu" class="btn-gold">INDIETRO</button>
         </div>
     </div>
- 
+
+    <!-- AVVISO "STIAMO ARRIVANDO" (campionato in lavorazione) -->
+    <div id="coming-soon-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="gold-text">CAMPIONATO</h2>
+            <p class="messaggio-modale">STIAMO ARRIVANDO...</p>
+            <button id="btn-close-coming-soon" class="btn-gold">OK</button>
+        </div>
+    </div>
+
     <!-- FASE 1: MODALE IMPOSTAZIONI -->
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
             <h2 class="gold-text">IMPOSTAZIONI</h2>
- 
+
             <section class="settings-group">
                 <h3 class="gold-text">AUDIO</h3>
                 <div class="setting-item">
@@ -78,7 +88,7 @@
                     <span id="sfx-val">100%</span>
                 </div>
             </section>
- 
+
             <section class="settings-group">
                 <h3 class="gold-text">CONTROLLI TASTIERA</h3>
                 <div class="controls-grid">
@@ -87,7 +97,7 @@
                     <div><span>Passaggio:</span> <strong>X</strong></div>
                 </div>
             </section>
- 
+
             <section class="settings-group">
                 <h3 class="gold-text">CONTROLLI TOUCH (MOBILE)</h3>
                 <div class="setting-item">
@@ -103,28 +113,26 @@
                     </select>
                 </div>
             </section>
- 
+
             <button id="btn-close-settings" class="btn-gold">SALVA E CHIUDI</button>
         </div>
     </div>
- 
+
     <!-- FASE 3: SCHERMATA GAMEPLAY CON CAMPO VERTICALE -->
     <div id="gameplay-screen" class="screen hidden">
         <header class="gameplay-header">
             <span id="match-info" class="gold-subheading">SQUADRA vs CPU</span>
             <div id="scoreboard" class="gold-text">0 - 0</div>
         </header>
- 
+
         <!-- Campo da gioco: finestra della camera 192x426 (il mondo è 352x676) -->
         <div class="field-container">
             <canvas id="game-canvas" width="192" height="426"></canvas>
         </div>
- 
+
         <button id="btn-back-to-select" class="btn-gold">ABBANDONA PARTITA</button>
     </div>
- 
+
     <script src="script.js"></script>
 </body>
 </html>
-
- 
