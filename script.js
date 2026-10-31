@@ -107,7 +107,8 @@ function clamp(v, min, max) {
 
 function aggiornaCamera() {
     const targetX = clamp(palla.x - VIEW_W / 2, 0, WORLD_W - VIEW_W);
-    const targetY = clamp(palla.y - VIEW_H / 2, 0, WORLD_H - VIEW_H);
+    const ancora = touchVisibile ? 0.4 : 0.5;     // con i pulsanti a schermo il pallone sta più in alto
+    const targetY = clamp(palla.y - VIEW_H * ancora, 0, WORLD_H - VIEW_H);
     camera.x += (targetX - camera.x) * 0.15;
     camera.y += (targetY - camera.y) * 0.15;
 }
@@ -152,6 +153,12 @@ let fiatoUtente = 100;          // resistenza per lo scatto (0-100)
 let affaticato = false;
 let jInizio = 0;                // da quando tieni premuto J (passaggio)
 const azioniCoda = [];          // azioni premute, eseguite al prossimo aggiornamento
+let kInizio = 0;                // da quando tieni premuto TIRO sul telefono (serve per la potenza)
+const joy = { attivo: false, x: 0, y: 0 };          // joystick analogico, valori da -1 a 1
+let modoSpeciale = 'carta';     // il tasto speciale può essere 'carta' o 'rigore'
+let touchVisibile = false;
+// Preferenze del giocatore (si salvano nel browser)
+const impostazioni = { cambio: 'automatico', touch: true, touchSize: 'medium' };
 let bannerAttivo = null;
 let ultimoTick = 0;
 let hudCache = '';
@@ -242,6 +249,8 @@ function preparaPartita() {
     fiatoUtente = 100;
     affaticato = false;
     jInizio = 0;
+    kInizio = 0;
+    joy.attivo = false; joy.x = 0; joy.y = 0;
     azioniCoda.length = 0;
 
     partita = {
@@ -491,6 +500,14 @@ function disegnaGiocatore(g, squadra) {
             ctx.fillStyle = affaticato ? '#e03030' : '#ffd700';
             ctx.fillRect(x - 6, y + 5, Math.round(12 * fiatoUtente / 100), 1);
         }
+        // carica del tiro (sul telefono) mentre tieni premuto TIRO
+        if (kInizio > 0) {
+            const caricaT = Math.min(1, (performance.now() - kInizio) / TEMPO_POTENZA_TIRO);
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(x - 7, y - 36, 14, 3);
+            ctx.fillStyle = caricaT >= 1 ? '#ff4040' : '#ff9a1f';
+            ctx.fillRect(x - 6, y - 35, Math.round(12 * caricaT), 1);
+        }
         // carica del passaggio lungo mentre tieni premuto J
         if (jInizio > 0) {
             const carica = Math.min(1, (performance.now() - jInizio) / TEMPO_PASSAGGIO_LUNGO);
@@ -519,13 +536,14 @@ function parametriIA(sq) {
 // Tasti di prova (da togliere): 7 = gol per te, 8 = gol avversario, 9 = avanza di un minuto
 const tasti = {};
 const TEMPO_PASSAGGIO_LUNGO = 300;     // ms di pressione di J per il passaggio lungo
+const TEMPO_POTENZA_TIRO = 700;        // ms di pressione di TIRO per la potenza massima (telefono)
 window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     tasti[k] = true;
     if (gameplayScreen.classList.contains('hidden') || !partita) return;
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     if (e.repeat || partita.fase !== 'gioco') return;
-    if (k === 'j') jInizio = performance.now();
+    if (k === 'j') iniziaPassaggio();
     if (k === 'k') azioniCoda.push({ a: 'tiro' });
     if (k === 'l') azioniCoda.push({ a: 'rinvio' });
     if (k === 'i') azioniCoda.push({ a: 'dribbling' });
@@ -539,13 +557,47 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
     const k = e.key.toLowerCase();
     tasti[k] = false;
-    if (k === 'j' && jInizio > 0) {
+    if (k === 'j') rilasciaPassaggio();
+});
+
+// Passaggio: si decide quando rilasci il tasto (J o pulsante a schermo); se tieni premuto è lungo
+function iniziaPassaggio() {
+    if (!partita || partita.fase !== 'gioco') return;
+    if (jInizio === 0) jInizio = performance.now();
+}
+function rilasciaPassaggio() {
+    if (jInizio > 0) {
         if (partita && partita.fase === 'gioco') {
             azioniCoda.push({ a: 'passaggio', lungo: performance.now() - jInizio >= TEMPO_PASSAGGIO_LUNGO });
         }
         jInizio = 0;
     }
-});
+}
+
+// Movimento: joystick (analogico) oppure tastiera (digitale)
+function leggiMovimento() {
+    if (joy.attivo) {
+        const m = Math.hypot(joy.x, joy.y);
+        if (m < 0.18) return { x: 0, y: 0, mag: 0 };
+        return { x: joy.x / m, y: joy.y / m, mag: Math.min(1, m) };
+    }
+    let dx = 0, dy = 0;
+    if (tasti['arrowleft'] || tasti['a']) dx -= 1;
+    if (tasti['arrowright'] || tasti['d']) dx += 1;
+    if (tasti['arrowup'] || tasti['w']) dy -= 1;
+    if (tasti['arrowdown'] || tasti['s']) dy += 1;
+    if (dx === 0 && dy === 0) return { x: 0, y: 0, mag: 0 };
+    const len = Math.hypot(dx, dy);
+    return { x: dx / len, y: dy / len, mag: 1 };
+}
+
+// Hai la palla (o sei vicino a una palla libera)?
+function inPossesso() {
+    const g = giocatoreUtente;
+    const t = palla.titolare;
+    if (t) return t === g;
+    return !!g && Math.hypot(palla.x - g.x, palla.y - (g.y - 3)) < 12;
+}
 
 // Elenco dei comandi nelle impostazioni (così non serve modificare index.html)
 (function aggiornaElencoComandi() {
@@ -861,16 +913,19 @@ function giocatoriDiMovimentoCasa() {
     return inCampo(squadraCasa).filter(q => q.ruolo !== 'POR').sort((a, b) => distDallaPalla(a) - distDallaPalla(b));
 }
 
-// Automatico: controlli chi ha la palla (portiere compreso); senza palla, il tuo giocatore più vicino al pallone
+// Controlli sempre chi ha la palla (portiere compreso). Senza palla dipende dall'impostazione:
+// - automatico: passi al tuo giocatore più vicino al pallone
+// - manuale: resti sullo stesso giocatore finché non premi Cambia
 function sceltaGiocatoreUtente() {
     const t = palla.titolare;
     if (t && squadraDi(t) === squadraCasa) { giocatoreUtente = t; return; }
     const valido = giocatoreUtente && giocatoreUtente.stato === 'dentro' && giocatoreUtente.ruolo !== 'POR';
-    if (bloccoCambioT > 0) { bloccoCambioT--; if (valido) return; }
     const lista = giocatoriDiMovimentoCasa();
     if (lista.length === 0) return;
-    if (!valido) giocatoreUtente = lista[0];
-    else if (distDallaPalla(lista[0]) + 14 < distDallaPalla(giocatoreUtente)) giocatoreUtente = lista[0];
+    if (!valido) { giocatoreUtente = lista[0]; return; }          // il giocatore è uscito o era il portiere
+    if (impostazioni.cambio === 'manuale') return;               // niente cambi automatici
+    if (bloccoCambioT > 0) { bloccoCambioT--; return; }
+    if (distDallaPalla(lista[0]) + 14 < distDallaPalla(giocatoreUtente)) giocatoreUtente = lista[0];
 }
 
 // Manuale (tasto Q): passa al giocatore successivo in un ordine fisso (difensore, difensore, attaccante)
@@ -929,16 +984,13 @@ function aggiornaGiocoDiProva() {
     const g = giocatoreUtente;     // il giocatore che controlli in questo momento
 
     // --- il tuo giocatore ---
-    let dx = 0, dy = 0;
-    if (tasti['arrowleft'] || tasti['a']) dx -= 1;
-    if (tasti['arrowright'] || tasti['d']) dx += 1;
-    if (tasti['arrowup'] || tasti['w']) dy -= 1;
-    if (tasti['arrowdown'] || tasti['s']) dy += 1;
-    if (g.stun > 0) { g.stun--; dx = 0; dy = 0; }
+    const inp = leggiMovimento();
+    let dx = inp.x, dy = inp.y;
+    if (g.stun > 0) { g.stun--; dx = 0; dy = 0; inp.mag = 0; }
     if (g.dribT > 0) g.dribT--;
     if (g.dribCd > 0) g.dribCd--;
 
-    const inMov = dx !== 0 || dy !== 0;
+    const inMov = (dx !== 0 || dy !== 0) && inp.mag > 0;
     // velocità: normale, scatto (Shift, consuma fiato) o dribbling (breve accelerazione)
     let velocita = 1.2;
     let scattando = false;
@@ -951,7 +1003,9 @@ function aggiornaGiocoDiProva() {
         fiatoUtente = Math.min(100, fiatoUtente + 0.4);
         if (affaticato && fiatoUtente >= 25) affaticato = false;
     }
-    if (g.dribT > 0) velocita = 2.0;
+    // joystick analogico: più lo spingi, più corri
+    if (joy.attivo) velocita *= 0.45 + 0.55 * Math.min(1, Math.max(0, inp.mag - 0.18) / 0.55);
+    if (g.dribT > 0) velocita = 2.1;
 
     if (inMov) {
         const len = Math.hypot(dx, dy);
@@ -993,8 +1047,9 @@ function aggiornaGiocoDiProva() {
         if (g.stun > 0) continue;
         if (az.a === 'tiro' && hoLaPalla && g.calcioT === 0) {
             g.calcioT = 10;
+            const vTiro = az.forza !== undefined ? 3.6 + 2.6 * az.forza : 4.8;   // sul telefono la potenza dipende da quanto tieni premuto
             if (g.ruolo === 'POR') calcia(g, g.mx * 7, g.my * 7);      // il portiere rinvia lungo
-            else calcia(g, g.mx * 4.8, g.my * 4.8);
+            else calcia(g, g.mx * vTiro, g.my * vTiro);
         } else if (az.a === 'rinvio' && hoLaPalla && g.ruolo === 'POR' && g.calcioT === 0) {
             g.calcioT = 10;
             calcia(g, g.mx * 7, g.my * 7);
@@ -1015,7 +1070,7 @@ function aggiornaGiocoDiProva() {
             if (dest) passaA(g, dest, 0, lungo ? 8 : 5);
             else calcia(g, g.mx * (lungo ? 7 : 2.8), g.my * (lungo ? 7 : 2.8));
         } else if (az.a === 'dribbling' && palleggio && g.dribCd === 0 && g.ruolo !== 'POR') {
-            g.dribT = 14;       // breve scatto: in questo tempo non ti rubano la palla
+            g.dribT = 16;       // breve scatto: in questo tempo non ti rubano la palla
             g.dribCd = 50;
         } else if (az.a === 'contrasto' && g.contrT === 0) {
             g.contrT = 30;
@@ -1104,6 +1159,7 @@ function drawGame() {
     aggiornaComparse();
     aggiornaCamera();
     aggiornaHud();
+    aggiornaTouchUi();
 
     // Frame della folla: cambia ogni 450 ms
     const frame = Math.floor(Date.now() / 450) % 2;
@@ -1267,3 +1323,208 @@ musicSlider.addEventListener('input', (e) => {
 sfxSlider.addEventListener('input', (e) => {
     sfxValDisplay.textContent = `${e.target.value}%`;
 });
+
+
+// =====================================================================
+// CONTROLLI TOUCH (TELEFONO) E IMPOSTAZIONI DI GIOCO
+// =====================================================================
+
+// --- carte e rigore presidenziale: per ora solo segnaposto, li colleghiamo quando arrivano le regole ---
+function azionaCarta() {
+    mostraBanner('CARTA: IN ARRIVO', 1.4, false);
+}
+function azionaRigorePresidenziale() {
+    mostraBanner('RIGORE PRES.: IN ARRIVO', 1.4, false);
+}
+
+// --- salvataggio delle preferenze nel browser ---
+function caricaImpostazioni() {
+    try {
+        const salvate = JSON.parse(localStorage.getItem('monaci_impostazioni') || '{}');
+        if (salvate.cambio === 'automatico' || salvate.cambio === 'manuale') impostazioni.cambio = salvate.cambio;
+        if (typeof salvate.touch === 'boolean') impostazioni.touch = salvate.touch;
+        if (['small', 'medium', 'large'].includes(salvate.touchSize)) impostazioni.touchSize = salvate.touchSize;
+    } catch (e) { /* se il browser non permette il salvataggio, si usano i valori di default */ }
+}
+function salvaImpostazioni() {
+    try { localStorage.setItem('monaci_impostazioni', JSON.stringify(impostazioni)); } catch (e) { /* ignora */ }
+}
+
+// --- costruzione dei pulsanti a schermo ---
+const touchUi = document.createElement('div');
+touchUi.id = 'touch-ui';
+touchUi.className = 'hidden medium';
+touchUi.innerHTML =
+    '<div id="joy-base"><div id="joy-stick"></div></div>' +
+    '<button type="button" id="tbtn-tiro" class="tbtn tbtn-grande">TIRO</button>' +
+    '<button type="button" id="tbtn-passaggio" class="tbtn tbtn-medio">PASSAGGIO</button>' +
+    '<button type="button" id="tbtn-dribbling" class="tbtn tbtn-medio">DRIBBLING</button>' +
+    '<button type="button" id="tbtn-cambia" class="tbtn tbtn-piccolo">CAMBIA</button>' +
+    '<button type="button" id="tbtn-speciale" class="tbtn tbtn-piccolo">CARTA</button>' +
+    '<button type="button" id="tbtn-scambia" class="tbtn tbtn-micro">&#9664;&#9654;</button>';
+gameplayScreen.appendChild(touchUi);
+touchUi.addEventListener('contextmenu', (e) => e.preventDefault());
+
+const tbTiro = document.getElementById('tbtn-tiro');
+const tbPassaggio = document.getElementById('tbtn-passaggio');
+const tbDribbling = document.getElementById('tbtn-dribbling');
+const tbCambia = document.getElementById('tbtn-cambia');
+const tbSpeciale = document.getElementById('tbtn-speciale');
+const tbScambia = document.getElementById('tbtn-scambia');
+const joyBase = document.getElementById('joy-base');
+const joyStick = document.getElementById('joy-stick');
+
+// Collega un pulsante: giu() alla pressione, su() al rilascio (funziona anche con più dita insieme)
+function collegaPulsante(el, giu, su) {
+    el.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        try { el.setPointerCapture(e.pointerId); } catch (err) { /* ok */ }
+        el.classList.add('premuto');
+        if (partita && partita.fase === 'gioco') giu();
+    });
+    const rilascia = () => {
+        if (!el.classList.contains('premuto')) return;
+        el.classList.remove('premuto');
+        if (su) su();
+    };
+    el.addEventListener('pointerup', rilascia);
+    el.addEventListener('pointercancel', rilascia);
+    el.addEventListener('lostpointercapture', rilascia);
+}
+
+// TIRO: con la palla, tieni premuto per scegliere la potenza; senza palla diventa CONTRASTO
+let tiroComeContrasto = false;
+collegaPulsante(tbTiro,
+    () => {
+        if (inPossesso()) { tiroComeContrasto = false; kInizio = performance.now(); }
+        else { tiroComeContrasto = true; azioniCoda.push({ a: 'contrasto' }); }
+    },
+    () => {
+        if (!tiroComeContrasto && kInizio > 0 && partita && partita.fase === 'gioco') {
+            const forza = Math.min(1, (performance.now() - kInizio) / TEMPO_POTENZA_TIRO);
+            azioniCoda.push({ a: 'tiro', forza: forza });
+        }
+        kInizio = 0;
+    });
+
+// PASSAGGIO: un tocco = passaggio al compagno; tieni premuto = passaggio più lungo e forte
+collegaPulsante(tbPassaggio, iniziaPassaggio, rilasciaPassaggio);
+
+// DRIBBLING: scatto che fa superare l'avversario
+collegaPulsante(tbDribbling, () => azioniCoda.push({ a: 'dribbling' }), null);
+
+// CAMBIA: passa al giocatore successivo
+collegaPulsante(tbCambia, () => cambiaGiocatore(), null);
+
+// CARTA / RIGORE PRESIDENZIALE: il pulsante usa la funzione attiva, le frecce cambiano funzione
+collegaPulsante(tbSpeciale, () => {
+    if (modoSpeciale === 'carta') azionaCarta(); else azionaRigorePresidenziale();
+}, null);
+collegaPulsante(tbScambia, () => { modoSpeciale = modoSpeciale === 'carta' ? 'rigore' : 'carta'; }, null);
+
+// JOYSTICK analogico
+let joyPointerId = null;
+function joyAggiorna(e) {
+    const r = joyBase.getBoundingClientRect();
+    const raggio = r.width / 2 * 0.75;
+    let x = (e.clientX - (r.left + r.width / 2)) / raggio;
+    let y = (e.clientY - (r.top + r.height / 2)) / raggio;
+    const m = Math.hypot(x, y);
+    if (m > 1) { x /= m; y /= m; }
+    joy.x = x; joy.y = y; joy.attivo = true;
+    joyStick.style.transform = 'translate(-50%, -50%) translate(' + (x * raggio) + 'px, ' + (y * raggio) + 'px)';
+}
+function joyRilascia() {
+    joyPointerId = null;
+    joy.attivo = false; joy.x = 0; joy.y = 0;
+    joyStick.style.transform = 'translate(-50%, -50%)';
+}
+joyBase.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    joyPointerId = e.pointerId;
+    try { joyBase.setPointerCapture(e.pointerId); } catch (err) { /* ok */ }
+    joyAggiorna(e);
+});
+joyBase.addEventListener('pointermove', (e) => { if (e.pointerId === joyPointerId) joyAggiorna(e); });
+joyBase.addEventListener('pointerup', (e) => { if (e.pointerId === joyPointerId) joyRilascia(); });
+joyBase.addEventListener('pointercancel', (e) => { if (e.pointerId === joyPointerId) joyRilascia(); });
+
+// Aggiorna scritte e carica dei pulsanti (chiamata a ogni frame)
+let touchCache = '';
+function aggiornaTouchUi() {
+    if (!touchVisibile) return;
+    const ora = performance.now();
+    const g = giocatoreUtente;
+    const possesso = inPossesso();
+    const portiereConPalla = !!g && g.ruolo === 'POR' && palla.titolare === g;
+    const etichettaTiro = portiereConPalla ? 'RINVIO' : (possesso ? 'TIRO' : 'CONTRASTO');
+    const squadraHaPalla = !!palla.titolare && squadraDi(palla.titolare) === squadraCasa;
+    const chiave = etichettaTiro + '|' + modoSpeciale + '|' + squadraHaPalla;
+    if (chiave !== touchCache) {
+        touchCache = chiave;
+        tbTiro.textContent = etichettaTiro;
+        tbTiro.classList.toggle('lungo', etichettaTiro.length > 5);
+        tbSpeciale.innerHTML = modoSpeciale === 'carta' ? 'CARTA' : 'RIGORE<br>PRES.';
+        tbCambia.classList.toggle('spento', squadraHaPalla);     // con la palla non si cambia
+    }
+    const caricaTiro = kInizio > 0 ? Math.min(1, (ora - kInizio) / TEMPO_POTENZA_TIRO) : 0;
+    const caricaPass = jInizio > 0 ? Math.min(1, (ora - jInizio) / TEMPO_PASSAGGIO_LUNGO) : 0;
+    tbTiro.style.setProperty('--carica', (caricaTiro * 100) + '%');
+    tbPassaggio.style.setProperty('--carica', (caricaPass * 100) + '%');
+    tbTiro.classList.toggle('pronto', caricaTiro >= 1);
+    tbPassaggio.classList.toggle('pronto', caricaPass >= 1);
+}
+
+// Mostra i pulsanti solo su schermi touch (o con ?touch=1 nell'indirizzo, per provarli dal PC)
+function haSchermoTouch() {
+    return navigator.maxTouchPoints > 0 || 'ontouchstart' in window ||
+        new URLSearchParams(location.search).get('touch') === '1';
+}
+function applicaTouch() {
+    touchVisibile = impostazioni.touch && haSchermoTouch();
+    touchUi.classList.toggle('hidden', !touchVisibile);
+    ['small', 'medium', 'large'].forEach(c => touchUi.classList.toggle(c, c === impostazioni.touchSize));
+    if (!touchVisibile) { joyRilascia(); kInizio = 0; }
+    touchCache = '';
+}
+
+// --- impostazioni: cambio giocatore, joypad touch, dimensione tasti ---
+(function inizializzaImpostazioni() {
+    caricaImpostazioni();
+
+    // nuova sezione "CAMBIO GIOCATORE" (aggiunta qui, non serve modificare index.html)
+    const contenitore = document.querySelector('#settings-modal .modal-content');
+    const toggleTouch = document.getElementById('touch-toggle');
+    const gruppoTouch = toggleTouch ? toggleTouch.closest('.settings-group') : null;
+    if (contenitore && !document.getElementById('cambio-giocatore')) {
+        const sezione = document.createElement('section');
+        sezione.className = 'settings-group';
+        sezione.innerHTML =
+            '<h3 class="gold-text">CAMBIO GIOCATORE</h3>' +
+            '<div class="setting-item">' +
+            '<label for="cambio-giocatore">Modalità:</label>' +
+            '<select id="cambio-giocatore">' +
+            '<option value="automatico">Automatico</option>' +
+            '<option value="manuale">Manuale</option>' +
+            '</select></div>' +
+            '<p style="font-size:8px;line-height:1.7;color:#bbb;">Automatico: passi al giocatore più vicino al pallone. ' +
+            'Manuale: cambi solo tu (tasto Q o pulsante CAMBIA).</p>';
+        contenitore.insertBefore(sezione, gruppoTouch || document.getElementById('btn-close-settings'));
+    }
+
+    const selCambio = document.getElementById('cambio-giocatore');
+    if (selCambio) {
+        selCambio.value = impostazioni.cambio;
+        selCambio.addEventListener('change', () => { impostazioni.cambio = selCambio.value; salvaImpostazioni(); });
+    }
+    if (toggleTouch) {
+        toggleTouch.checked = impostazioni.touch;
+        toggleTouch.addEventListener('change', () => { impostazioni.touch = toggleTouch.checked; salvaImpostazioni(); applicaTouch(); });
+    }
+    const selDim = document.getElementById('touch-size');
+    if (selDim) {
+        selDim.value = impostazioni.touchSize;
+        selDim.addEventListener('change', () => { impostazioni.touchSize = selDim.value; salvaImpostazioni(); applicaTouch(); });
+    }
+    applicaTouch();
+})();
