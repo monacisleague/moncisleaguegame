@@ -647,6 +647,8 @@ function passaA(p, q, errore, vMax) {
     const ang = Math.atan2(dy, dx) + (Math.random() - 0.5) * 2 * errore;
     const v = clamp(dist / 30, 2.2, vMax || 5);
     calcia(p, Math.cos(ang) * v, Math.sin(ang) * v);
+    palla.passatoDa = p;
+    palla.passaT = performance.now();
 }
 
 function prendiPalla(p) {
@@ -668,6 +670,26 @@ function scegliPassaggio(p, sq) {
         if (dist < 25 || dist > 190) return;
         const avanzamento = su ? (p.y - q.y) : (q.y - p.y);
         const val = avanzamento - dist * 0.2 + (q.ruolo === 'POR' ? -80 : 0);
+        if (val > punteggio) { punteggio = val; migliore = q; }
+    });
+    return migliore;
+}
+
+// Compagno a cui passare per far avanzare l'azione: deve essere più avanti di me di almeno minAvanz px
+// (valori negativi = accetto anche passaggi laterali). Mai a chi mi ha appena passato la palla.
+function scegliPassaggioAvanti(p, sq, minAvanz) {
+    const su = sq === squadraCasa;
+    const recente = palla.passatoDa && (performance.now() - palla.passaT) < 3000 ? palla.passatoDa : null;
+    let migliore = null, punteggio = -Infinity;
+    inCampo(sq).forEach(q => {
+        if (q === p || q === recente || q.ruolo === 'POR') return;
+        const dist = Math.hypot(q.x - p.x, q.y - p.y);
+        if (dist < 25 || dist > 190) return;
+        const avanzamento = su ? (p.y - q.y) : (q.y - p.y);
+        if (avanzamento < minAvanz) return;
+        // il compagno deve essere libero: nessun avversario a meno di 30 px
+        if (inCampo(avversariDi(sq)).some(o => o.ruolo !== 'POR' && Math.hypot(o.x - q.x, o.y - q.y) < 30)) return;
+        const val = avanzamento - dist * 0.2;
         if (val > punteggio) { punteggio = val; migliore = q; }
     });
     return migliore;
@@ -732,7 +754,7 @@ function aggiornaGiocatoreIA(p, sq) {
         const soloAvanti = compagniVicini < compagniNecessari;             // la squadra non è ancora salita: aspetto
         const tiroPossibile = dist < 150 && zonaTiroValida(sq, p.x, p.y);
         const haAspettato = p.pensaT < -150;                                // dopo ~2,5 s tira comunque
-        if (tiroPossibile && p.pensaT <= 0 && (!soloAvanti || dist < 95 || haAspettato)) {
+        if (tiroPossibile && p.pensaT <= 0 && (!soloAvanti || dist < 125 || haAspettato)) {
             const bersaglioX = porta.x + (Math.random() - 0.5) * 30;
             const ang = Math.atan2(porta.y - p.y, bersaglioX - p.x) + (Math.random() - 0.5) * 2 * par.errore;
             const v = 4.6;
@@ -740,11 +762,19 @@ function aggiornaGiocatoreIA(p, sq) {
             return;
         }
         const avvicino = inCampo(avv).filter(q => Math.hypot(q.x - p.x, q.y - p.y) < 40 && q.ruolo !== 'POR');
-        const dest = scegliPassaggio(p, sq);
-        const davantiAlla = su ? p.y < centroY : p.y > centroY;
-        if (dest && p.pensaT <= 0 && (p.ruolo === 'DIF' || (avvicino.length > 0 && !davantiAlla))) {
-            passaA(p, dest, par.errore * 0.5);
+        const stretto = avvicino.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 26);
+        const inPropriaMeta = su ? p.y > centroY : p.y < centroY;
+        // passaggio utile: solo se fa avanzare l'azione (sono pressato, oppure sono arretrato e un compagno è molto più avanti)
+        const destAvanti = scegliPassaggioAvanti(p, sq, 30);
+        const avanzDest = destAvanti ? (su ? p.y - destAvanti.y : destAvanti.y - p.y) : 0;
+        if (destAvanti && p.pensaT <= 0 && (avvicino.length > 0 || (inPropriaMeta && avanzDest >= 45))) {
+            passaA(p, destAvanti, par.errore * 0.5);
             return;
+        }
+        // via di fuga: marcato stretto da un po', scarico lateralmente (mai indietro, mai a chi mi ha passato la palla)
+        if (stretto && p.pensaT < -90) {
+            const laterale = scegliPassaggioAvanti(p, sq, -5);
+            if (laterale) { passaA(p, laterale, par.errore * 0.5); return; }
         }
         // dribbling verso la porta, scartando chi è vicino
         let vx = dxp / dist, vy = dyp / dist;
@@ -756,7 +786,7 @@ function aggiornaGiocatoreIA(p, sq) {
             vx /= l; vy /= l;
         }
         // se i compagni sono lontani rallento, così la squadra sale insieme
-        const velDribbling = par.vel * ((soloAvanti && dist > 95) ? 0.45 : 0.95);
+        const velDribbling = par.vel * ((soloAvanti && dist > 95 && !haAspettato) ? 0.45 : 0.95);
         muoviVerso(p, p.x + vx * 10, p.y + vy * 10, velDribbling);
         return;
     }
