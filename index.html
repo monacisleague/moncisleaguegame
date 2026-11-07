@@ -61,12 +61,25 @@
         </div>
     </div>
 
-    <!-- AVVISO "STIAMO ARRIVANDO" (campionato in lavorazione) -->
-    <div id="coming-soon-modal" class="modal hidden">
+    <!-- CAMPIONATO: SCHERMATA PRINCIPALE (classifica, partite, tabellone) -->
+    <div id="campionato-screen" class="screen hidden">
+        <h1 id="camp-titolo" class="gold-text">CAMPIONATO</h1>
+        <p id="camp-sottotitolo" class="gold-subheading"></p>
+        <div id="camp-contenuto" class="camp-contenuto"></div>
+        <div class="action-buttons">
+            <button id="btn-camp-azione" class="btn-gold">CONTINUA</button>
+            <button id="btn-camp-esci" class="btn-gold">ESCI</button>
+        </div>
+    </div>
+
+    <!-- CAMPIONATO: CONTINUA O NUOVO -->
+    <div id="camp-scelta-modal" class="modal hidden">
         <div class="modal-content">
             <h2 class="gold-text">CAMPIONATO</h2>
-            <p class="messaggio-modale">STIAMO ARRIVANDO...</p>
-            <button id="btn-close-coming-soon" class="btn-gold">OK</button>
+            <p id="camp-scelta-info" class="messaggio-modale"></p>
+            <button id="btn-camp-continua" class="btn-gold">CONTINUA</button>
+            <button id="btn-camp-nuovo" class="btn-gold">NUOVO CAMPIONATO</button>
+            <button id="btn-camp-annulla" class="btn-gold">ANNULLA</button>
         </div>
     </div>
 
