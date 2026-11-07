@@ -486,3 +486,84 @@ h1 {
     height: calc(34px * var(--ts));
     font-size: calc(7px * var(--ts));
 }
+
+/* --- CAMPIONATO --- */
+.camp-contenuto {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.camp-sezione {
+    width: 100%;
+    background: #0d0d0d;
+    border: 3px solid #ffd700;
+    padding: 10px;
+    box-shadow: 4px 4px 0px #8b6508;
+    text-align: left;
+}
+.camp-sezione .gold-subheading { text-align: center; }
+.camp-nota {
+    margin-top: 8px;
+    font-size: 7px;
+    line-height: 1.8;
+    color: #b8860b;
+    text-align: center;
+}
+
+/* righe delle partite */
+.partita-riga {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 6px;
+    padding: 8px 6px;
+    font-size: 8px;
+    color: #ffffff;
+    border-bottom: 1px dashed #444;
+}
+.partita-riga:last-child { border-bottom: none; }
+.partita-riga.mia { background: #332b00; color: #ffd700; }
+.partita-riga .sq { flex: 1; text-align: left; }
+.partita-riga .sq.dx { text-align: right; }
+.partita-riga .ris { min-width: 54px; text-align: center; color: #ffd700; }
+.partita-riga .sh { width: 100%; text-align: center; font-size: 7px; color: #b8860b; }
+
+/* classifica */
+.tabella-classifica {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 8px;
+    color: #ffffff;
+    text-align: center;
+}
+.tabella-classifica th {
+    color: #ffd700;
+    font-weight: normal;
+    padding: 5px 0;
+    border-bottom: 2px solid #ffd700;
+}
+.tabella-classifica td {
+    padding: 7px 0;
+    border-bottom: 1px dashed #444;
+}
+.tabella-classifica th:nth-child(1) { width: 8%; }
+.tabella-classifica th:nth-child(2) { width: 15%; }
+.tabella-classifica td.nome { text-align: left; padding-left: 2px; }
+.tabella-classifica td.pt { color: #ffd700; }
+.tabella-classifica tr.mia td { background: #332b00; color: #ffd700; }
+.tabella-classifica tr.zona-semi td:first-child { box-shadow: inset 3px 0 0 #ffd700; }
+.tabella-classifica tr.zona-quarti td:first-child { box-shadow: inset 3px 0 0 #444; }
+
+/* pulsante di fine partita: sta in mezzo allo schermo, sopra i comandi touch */
+#btn-fine-partita {
+    position: absolute;
+    left: 50%;
+    top: 58%;
+    transform: translateX(-50%);
+    z-index: 7;
+    font-size: 10px;
+    padding: 12px 22px;
+}
