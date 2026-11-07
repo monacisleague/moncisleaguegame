@@ -154,6 +154,9 @@ let affaticato = false;
 let jInizio = 0;                // da quando tieni premuto J (passaggio)
 const azioniCoda = [];          // azioni premute, eseguite al prossimo aggiornamento
 let inPausa = false;             // partita in pausa (menu aperto)
+let modalitaGioco = 'amichevole';   // 'amichevole' oppure 'campionato'
+let configPartita = null;       // nel campionato: { casa, ospite, diff } della partita da giocare
+let difficoltaInUso = null;     // difficoltà della partita in corso
 let kInizio = 0;                // da quando tieni premuto TIRO sul telefono (serve per la potenza)
 const joy = { attivo: false, x: 0, y: 0 };          // joystick analogico, valori da -1 a 1
 let modoSpeciale = 'carta';     // il tasto speciale può essere 'carta' o 'rigore'
@@ -231,10 +234,15 @@ function setGiocatoriInCampo(n, immediato) {
 
 // Prepara una nuova partita: squadre, formazioni, pallone e cronometro
 function preparaPartita() {
-    const idxCasa = currentTeamIndex;
-    // PROVVISORIO: l'avversario è una squadra a caso diversa dalla tua
+    const idxCasa = (configPartita && configPartita.casa !== undefined) ? configPartita.casa : currentTeamIndex;
+    difficoltaInUso = (configPartita && configPartita.diff) || gameState.difficulty;
     let idxOspite;
-    do { idxOspite = Math.floor(Math.random() * teamsList.length); } while (idxOspite === idxCasa);
+    if (configPartita && configPartita.ospite !== undefined) {
+        idxOspite = configPartita.ospite;                  // campionato: l'avversario è quello del calendario
+    } else {
+        // amichevole: l'avversario è una squadra a caso diversa dalla tua
+        do { idxOspite = Math.floor(Math.random() * teamsList.length); } while (idxOspite === idxCasa);
+    }
 
     squadraCasa.idx = idxCasa;
     squadraCasa.nome = teamsList[idxCasa].name;
@@ -528,7 +536,7 @@ const DIFFICOLTA = {
     DIFFICILE: { vel: 1.25, press: 150, parata: 0.80, contrasto: 0.65, errore: 0.07, penso: 8 }
 };
 function parametriIA(sq) {
-    if (sq === squadraOspite) return DIFFICOLTA[gameState.difficulty] || DIFFICOLTA.MEDIO;
+    if (sq === squadraOspite) return DIFFICOLTA[difficoltaInUso || gameState.difficulty] || DIFFICOLTA.MEDIO;
     return DIFFICOLTA.MEDIO;
 }
 
@@ -1166,6 +1174,7 @@ function drawGame() {
     }
     aggiornaHud();
     aggiornaTouchUi();
+    aggiornaBottoneFine();
 
     // Frame della folla: cambia ogni 450 ms
     const frame = Math.floor(Date.now() / 450) % 2;
@@ -1320,6 +1329,8 @@ btnPrevDiff.addEventListener('click', () => {
 });
 
 btnStartMatch.addEventListener('click', () => {
+    modalitaGioco = 'amichevole';
+    configPartita = null;
     teamSelectScreen.classList.add('hidden');
     gameplayScreen.classList.remove('hidden');
     preparaPartita();
@@ -1579,19 +1590,367 @@ document.getElementById('btn-pausa-impostazioni').addEventListener('click', () =
 });
 document.getElementById('btn-pausa-abbandona').addEventListener('click', () => {
     impostaPausa(false);
-    btnBackToSelect.click();        // stesso comportamento del vecchio pulsante: torna alla scelta della squadra
+    if (modalitaGioco === 'campionato') tornaAlCampionato();    // la partita non viene registrata
+    else btnBackToSelect.click();   // torna alla scelta della squadra
 });
 
 
 // =====================================================================
-// CAMPIONATO (per ora solo avviso: ci stiamo lavorando)
+// CAMPIONATO
+// 5 giornate (ogni squadra affronta le altre 5), poi quarti, semifinali e finale.
+// Punti: vittoria 3, sconfitta 0, vittoria agli shootout (SV) 2, sconfitta agli shootout (SS) 1.
+// Le partite delle altre squadre sono simulate a caso. Tutto si salva nel browser.
 // =====================================================================
+const CHIAVE_CAMPIONATO = 'monaci_campionato';
+const NUMERO_GIORNATE = 5;
+let campionato = null;
+let partitaCampionato = null;       // la partita del campionato che stai giocando: { m, registrata }
+
+// --- partite: m = { a, b, gA, gB, sh }  (gA/gB = null finché non è giocata; sh = shootout se è finita in parità) ---
+function nuovaPartitaCamp(a, b) { return { a: a, b: b, gA: null, gB: null, sh: null }; }
+function giocata(m) { return m.gA !== null; }
+function coinvolge(m, t) { return m.a === t || m.b === t; }
+function vincitore(m) {
+    if (m.gA > m.gB) return m.a;
+    if (m.gB > m.gA) return m.b;
+    return m.sh.a > m.sh.b ? m.a : m.b;       // parità: decidono gli shootout
+}
+function golCasuali() {
+    let g = 0;
+    for (let i = 0; i < 8; i++) if (Math.random() < 0.3) g++;    // in media circa 2,4 gol a squadra
+    return g;
+}
+function simulaPartita(m) {
+    m.gA = golCasuali();
+    m.gB = golCasuali();
+    if (m.gA === m.gB) {
+        const s = simulaShootout();
+        m.sh = { a: s.casa, b: s.osp };
+    }
+}
+
+// --- creazione del campionato ---
+function creaCampionato(utente, diff) {
+    // ordine casuale e calendario a gironi (metodo del cerchio: 5 giornate da 3 partite)
+    const ordine = teamsList.map((_, i) => i);
+    for (let i = ordine.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ordine[i], ordine[j]] = [ordine[j], ordine[i]];
+    }
+    let arr = ordine.slice();
+    const girone = [];
+    for (let r = 0; r < NUMERO_GIORNATE; r++) {
+        girone.push([nuovaPartitaCamp(arr[0], arr[5]), nuovaPartitaCamp(arr[1], arr[4]), nuovaPartitaCamp(arr[2], arr[3])]);
+        arr = [arr[0], arr[5], arr[1], arr[2], arr[3], arr[4]];
+    }
+    const c = {
+        v: 1, utente: utente, diff: diff,
+        fase: 'girone', giornata: 0,
+        girone: girone, quarti: [], semifinali: [], finale: [],
+        posGirone: [], campione: null, eliminatoIn: null
+    };
+    preparaFase(c);
+    return c;
+}
+
+function partiteFase(c) {
+    if (c.fase === 'girone') return c.girone[c.giornata];
+    if (c.fase === 'quarti') return c.quarti;
+    if (c.fase === 'semifinali') return c.semifinali;
+    if (c.fase === 'finale') return c.finale;
+    return [];
+}
+// all'inizio di ogni turno si simulano subito le partite a cui non partecipi
+function preparaFase(c) {
+    partiteFase(c).forEach(m => { if (!giocata(m) && !coinvolge(m, c.utente)) simulaPartita(m); });
+}
+
+// --- classifica del girone ---
+function scontroDiretto(c, x, y) {
+    const m = c.girone.flat().find(p => giocata(p) && ((p.a === x && p.b === y) || (p.a === y && p.b === x)));
+    if (!m) return 0;
+    return vincitore(m) === x ? -1 : 1;        // negativo = x sta sopra
+}
+function classificaGirone(c) {
+    const righe = teamsList.map((_, i) => ({ id: i, g: 0, v: 0, sv: 0, ss: 0, s: 0, gf: 0, gs: 0, dr: 0, pt: 0 }));
+    c.girone.flat().forEach(m => {
+        if (!giocata(m)) return;
+        const A = righe[m.a], B = righe[m.b];
+        A.g++; B.g++;
+        A.gf += m.gA; A.gs += m.gB; B.gf += m.gB; B.gs += m.gA;
+        if (m.gA > m.gB) { A.v++; B.s++; }
+        else if (m.gB > m.gA) { B.v++; A.s++; }
+        else if (m.sh.a > m.sh.b) { A.sv++; B.ss++; }
+        else { B.sv++; A.ss++; }
+    });
+    righe.forEach(r => { r.dr = r.gf - r.gs; r.pt = 3 * r.v + 2 * r.sv + r.ss; });
+    // parità di punti: differenza reti, gol fatti, scontro diretto
+    righe.sort((x, y) => (y.pt - x.pt) || (y.dr - x.dr) || (y.gf - x.gf) || scontroDiretto(c, x.id, y.id) || (x.id - y.id));
+    return righe;
+}
+
+// --- avanzamento tra le fasi ---
+function avanzaFase(c) {
+    const p = c.posGirone;
+    if (c.fase === 'girone') {
+        if (c.giornata < NUMERO_GIORNATE - 1) {
+            c.giornata++;
+        } else {
+            c.posGirone = classificaGirone(c).map(r => r.id);
+            const q = c.posGirone;
+            c.quarti = [nuovaPartitaCamp(q[2], q[5]), nuovaPartitaCamp(q[3], q[4])];    // 3ª-6ª e 4ª-5ª
+            c.fase = 'quarti';
+        }
+    } else if (c.fase === 'quarti') {
+        c.semifinali = [nuovaPartitaCamp(p[0], vincitore(c.quarti[1])), nuovaPartitaCamp(p[1], vincitore(c.quarti[0]))];
+        c.fase = 'semifinali';
+    } else if (c.fase === 'semifinali') {
+        c.finale = [nuovaPartitaCamp(vincitore(c.semifinali[0]), vincitore(c.semifinali[1]))];
+        c.fase = 'finale';
+    } else if (c.fase === 'finale') {
+        c.campione = vincitore(c.finale[0]);
+        c.fase = 'finito';
+    }
+    preparaFase(c);
+}
+// se esci, il torneo prosegue da solo fino alla fine e si vede chi vince
+function completaTorneo(c) {
+    while (c.fase !== 'finito') {
+        partiteFase(c).forEach(m => { if (!giocata(m)) simulaPartita(m); });
+        avanzaFase(c);
+    }
+}
+
+// --- salvataggio ---
+function salvaCampionato() {
+    try { localStorage.setItem(CHIAVE_CAMPIONATO, JSON.stringify(campionato)); } catch (e) { /* ignora */ }
+}
+function leggiCampionatoSalvato() {
+    try {
+        const c = JSON.parse(localStorage.getItem(CHIAVE_CAMPIONATO));
+        if (c && c.v === 1 && Array.isArray(c.girone) && c.girone.length === NUMERO_GIORNATE) return c;
+    } catch (e) { /* nessun salvataggio valido */ }
+    return null;
+}
+function cancellaCampionatoSalvato() {
+    try { localStorage.removeItem(CHIAVE_CAMPIONATO); } catch (e) { /* ignora */ }
+}
+
+// --- partita del campionato ---
+function etichettaFase(c) {
+    if (c.fase === 'girone') return 'GIORNATA ' + (c.giornata + 1) + '/' + NUMERO_GIORNATE;
+    return { quarti: 'QUARTI', semifinali: 'SEMIFINALE', finale: 'FINALE' }[c.fase] || '';
+}
+function avviaPartitaCampionato(m) {
+    const c = campionato;
+    modalitaGioco = 'campionato';
+    configPartita = { casa: c.utente, ospite: (m.a === c.utente ? m.b : m.a), diff: c.diff };
+    partitaCampionato = { m: m, registrata: false };
+    campScreen.classList.add('hidden');
+    gameplayScreen.classList.remove('hidden');
+    preparaPartita();
+    matchInfo.textContent = etichettaFase(c) + ' | ' + c.diff;
+    avviaLoop();
+}
+
+// il risultato della tua partita si registra appena finisce (così non si perde se chiudi la pagina)
+window.suFinePartita = function (r) {
+    if (modalitaGioco !== 'campionato' || !campionato || !partitaCampionato || partitaCampionato.registrata) return;
+    partitaCampionato.registrata = true;
+    const c = campionato, m = partitaCampionato.m;
+    const utenteEA = m.a === c.utente;
+    m.gA = utenteEA ? r.golCasa : r.golOspite;
+    m.gB = utenteEA ? r.golOspite : r.golCasa;
+    m.sh = r.shootout ? (utenteEA ? { a: r.shootout.casa, b: r.shootout.osp } : { a: r.shootout.osp, b: r.shootout.casa }) : null;
+    if (c.fase !== 'girone' && vincitore(m) !== c.utente) {
+        c.eliminatoIn = c.fase;           // eliminato: il resto del torneo si simula e si vede chi vince
+        completaTorneo(c);
+    }
+    salvaCampionato();
+};
+
+// --- schermata del campionato ---
+const campScreen = document.getElementById('campionato-screen');
+const campTitolo = document.getElementById('camp-titolo');
+const campSottotitolo = document.getElementById('camp-sottotitolo');
+const campContenuto = document.getElementById('camp-contenuto');
+const btnCampAzione = document.getElementById('btn-camp-azione');
+const btnCampEsci = document.getElementById('btn-camp-esci');
+
+function el(tag, classe, testo) {
+    const e = document.createElement(tag);
+    if (classe) e.className = classe;
+    if (testo !== undefined) e.textContent = testo;
+    return e;
+}
+function nomeBreve(i) { return teamsList[i].name.replace(/\s*FC$/, '').replace(/^FC\s*/, ''); }
+function siglaSq(i) { return abbreviazione(teamsList[i].name); }
+
+function sezioneCamp(titolo) {
+    const sez = el('div', 'camp-sezione');
+    sez.appendChild(el('h2', 'gold-subheading', titolo));
+    return sez;
+}
+function rigaPartitaCamp(m, c) {
+    const riga = el('div', 'partita-riga' + (coinvolge(m, c.utente) ? ' mia' : ''));
+    riga.appendChild(el('span', 'sq', nomeBreve(m.a)));
+    riga.appendChild(el('span', 'ris', giocata(m) ? (m.gA + ' - ' + m.gB) : 'VS'));
+    riga.appendChild(el('span', 'sq dx', nomeBreve(m.b)));
+    if (giocata(m) && m.sh) riga.appendChild(el('span', 'sh', 'SHOOTOUT ' + m.sh.a + ' - ' + m.sh.b));
+    return riga;
+}
+function tabellaClassifica(c) {
+    const t = el('table', 'tabella-classifica');
+    const intest = el('tr');
+    ['#', 'SQ', 'G', 'V', 'SV', 'SS', 'S', 'GF', 'GS', 'DR', 'PT'].forEach(h => intest.appendChild(el('th', null, h)));
+    const thead = el('thead'); thead.appendChild(intest); t.appendChild(thead);
+    const tbody = el('tbody');
+    classificaGirone(c).forEach((r, i) => {
+        const tr = el('tr', (r.id === c.utente ? 'mia ' : '') + (i < 2 ? 'zona-semi' : 'zona-quarti'));
+        [i + 1, siglaSq(r.id), r.g, r.v, r.sv, r.ss, r.s, r.gf, r.gs, (r.dr > 0 ? '+' : '') + r.dr, r.pt].forEach((v, k) => {
+            tr.appendChild(el('td', k === 1 ? 'nome' : (k === 10 ? 'pt' : null), String(v)));
+        });
+        tbody.appendChild(tr);
+    });
+    t.appendChild(tbody);
+    return t;
+}
+function sezioneClassifica(c) {
+    const sez = sezioneCamp('CLASSIFICA');
+    sez.appendChild(tabellaClassifica(c));
+    sez.appendChild(el('p', 'camp-nota', 'V=3 PT  SV=2 PT  SS=1 PT. LE PRIME 2 VANNO IN SEMIFINALE, DALLA 3ª ALLA 6ª AI QUARTI.'));
+    return sez;
+}
+
+function renderCampionato() {
+    const c = campionato;
+    if (!c) return;
+    campTitolo.textContent = c.fase === 'girone' ? 'GIORNATA ' + (c.giornata + 1) + ' / ' + NUMERO_GIORNATE
+        : ({ quarti: 'QUARTI DI FINALE', semifinali: 'SEMIFINALI', finale: 'FINALE', finito: 'TORNEO CONCLUSO' }[c.fase]);
+    campSottotitolo.textContent = nomeBreve(c.utente) + ' - ' + c.diff;
+    campContenuto.innerHTML = '';
+
+    if (c.fase === 'finito') {
+        const banner = sezioneCamp(c.campione === c.utente ? 'SEI IL CAMPIONE!' : 'CAMPIONE: ' + nomeBreve(c.campione));
+        if (c.eliminatoIn) {
+            const dove = { quarti: 'AI QUARTI', semifinali: 'IN SEMIFINALE', finale: 'IN FINALE' }[c.eliminatoIn];
+            banner.appendChild(el('p', 'camp-nota', 'SEI STATO ELIMINATO ' + dove + '.'));
+        }
+        campContenuto.appendChild(banner);
+    }
+    if (c.fase === 'girone') {
+        const sez = sezioneCamp('PARTITE DELLA GIORNATA');
+        c.girone[c.giornata].forEach(m => sez.appendChild(rigaPartitaCamp(m, c)));
+        campContenuto.appendChild(sez);
+        campContenuto.appendChild(sezioneClassifica(c));
+    } else {
+        // tabellone, dalla fase più recente alla più vecchia
+        [['FINALE', c.finale], ['SEMIFINALI', c.semifinali], ['QUARTI DI FINALE', c.quarti]].forEach(([titolo, partite]) => {
+            if (!partite.length) return;
+            const sez = sezioneCamp(titolo);
+            partite.forEach(m => sez.appendChild(rigaPartitaCamp(m, c)));
+            if (titolo === 'QUARTI DI FINALE') {
+                sez.appendChild(el('p', 'camp-nota', '1ª E 2ª DEL GIRONE GIÀ IN SEMIFINALE: ' + nomeBreve(c.posGirone[0]) + ' E ' + nomeBreve(c.posGirone[1]) + '.'));
+            }
+            campContenuto.appendChild(sez);
+        });
+        campContenuto.appendChild(sezioneClassifica(c));
+    }
+
+    // pulsante principale
+    const daGiocare = partiteFase(c).find(m => coinvolge(m, c.utente) && !giocata(m));
+    if (c.fase === 'finito') {
+        btnCampAzione.textContent = 'NUOVO CAMPIONATO';
+    } else if (daGiocare) {
+        btnCampAzione.textContent = c.fase === 'girone' ? 'GIOCA GIORNATA ' + (c.giornata + 1)
+            : { quarti: 'GIOCA IL QUARTO', semifinali: 'GIOCA LA SEMIFINALE', finale: 'GIOCA LA FINALE' }[c.fase];
+    } else {
+        btnCampAzione.textContent = 'CONTINUA';
+    }
+    window.scrollTo(0, 0);
+}
+
+function mostraCampionato() {
+    mainMenu.classList.add('hidden');
+    teamSelectScreen.classList.add('hidden');
+    gameplayScreen.classList.add('hidden');
+    campScreen.classList.remove('hidden');
+    renderCampionato();
+}
+function tornaAlCampionato() {
+    impostaPausa(false);
+    mostraCampionato();
+}
+
+btnCampAzione.addEventListener('click', () => {
+    const c = campionato;
+    if (!c) return;
+    if (c.fase === 'finito') {
+        campionato = creaCampionato(c.utente, c.diff);       // nuovo campionato con la stessa squadra e difficoltà
+        salvaCampionato();
+        renderCampionato();
+        return;
+    }
+    const daGiocare = partiteFase(c).find(m => coinvolge(m, c.utente) && !giocata(m));
+    if (daGiocare) { avviaPartitaCampionato(daGiocare); return; }
+    avanzaFase(c);
+    salvaCampionato();
+    renderCampionato();
+});
+btnCampEsci.addEventListener('click', () => {
+    campScreen.classList.add('hidden');
+    teamSelectScreen.classList.remove('hidden');
+});
+
+// --- pulsante CAMPIONATO nella scelta squadra: continua o nuovo ---
 const btnCampionato = document.getElementById('btn-campionato');
-const comingSoonModal = document.getElementById('coming-soon-modal');
-const btnCloseComingSoon = document.getElementById('btn-close-coming-soon');
-if (btnCampionato && comingSoonModal) {
-    btnCampionato.addEventListener('click', () => comingSoonModal.classList.remove('hidden'));
+const campSceltaModal = document.getElementById('camp-scelta-modal');
+const campSceltaInfo = document.getElementById('camp-scelta-info');
+
+function iniziaNuovoCampionato() {
+    campionato = creaCampionato(currentTeamIndex, difficultiesList[currentDiffIndex]);
+    salvaCampionato();
+    mostraCampionato();
 }
-if (btnCloseComingSoon && comingSoonModal) {
-    btnCloseComingSoon.addEventListener('click', () => comingSoonModal.classList.add('hidden'));
+if (btnCampionato) {
+    btnCampionato.addEventListener('click', () => {
+        const salvato = leggiCampionatoSalvato();
+        if (salvato && salvato.fase !== 'finito') {
+            const quando = salvato.fase === 'girone' ? 'GIORNATA ' + (salvato.giornata + 1) + '/' + NUMERO_GIORNATE
+                : { quarti: 'QUARTI', semifinali: 'SEMIFINALI', finale: 'FINALE' }[salvato.fase];
+            campSceltaInfo.textContent = 'HAI UN CAMPIONATO IN CORSO: ' + nomeBreve(salvato.utente) + ' - ' + salvato.diff + ' - ' + quando + '.';
+            campSceltaModal.classList.remove('hidden');
+        } else {
+            iniziaNuovoCampionato();
+        }
+    });
+    document.getElementById('btn-camp-continua').addEventListener('click', () => {
+        campSceltaModal.classList.add('hidden');
+        campionato = leggiCampionatoSalvato();
+        if (campionato) mostraCampionato();
+    });
+    document.getElementById('btn-camp-nuovo').addEventListener('click', () => {
+        campSceltaModal.classList.add('hidden');
+        iniziaNuovoCampionato();       // sovrascrive il salvataggio
+    });
+    document.getElementById('btn-camp-annulla').addEventListener('click', () => campSceltaModal.classList.add('hidden'));
 }
+
+// --- pulsante di fine partita: CONTINUA (campionato) oppure ESCI (amichevole) ---
+const btnFinePartita = document.createElement('button');
+btnFinePartita.type = 'button';
+btnFinePartita.id = 'btn-fine-partita';
+btnFinePartita.className = 'btn-gold hidden';
+gameplayScreen.appendChild(btnFinePartita);
+let finePartitaVisibile = false;
+function aggiornaBottoneFine() {
+    const visibile = !!partita && partita.fase === 'fine';
+    if (visibile === finePartitaVisibile) return;
+    finePartitaVisibile = visibile;
+    btnFinePartita.classList.toggle('hidden', !visibile);
+    btnFinePartita.textContent = modalitaGioco === 'campionato' ? 'CONTINUA' : 'ESCI';
+}
+btnFinePartita.addEventListener('click', () => {
+    if (modalitaGioco === 'campionato') tornaAlCampionato();
+    else { impostaPausa(false); btnBackToSelect.click(); }
+});
