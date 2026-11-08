@@ -60,6 +60,7 @@ const BASE_W = 192;
 const BASE_H = 426;
 let VIEW_W = BASE_W;
 let VIEW_H = BASE_H;
+const PANNELLO_TOUCH = 248;           // altezza (px) della fascia dei comandi sul telefono, con tasti di dimensione media
 const WORLD_W = 352;
 const WORLD_H = 676;
 
@@ -107,8 +108,7 @@ function clamp(v, min, max) {
 
 function aggiornaCamera() {
     const targetX = clamp(palla.x - VIEW_W / 2, 0, WORLD_W - VIEW_W);
-    const ancora = touchVisibile ? 0.4 : 0.5;     // con i pulsanti a schermo il pallone sta più in alto
-    const targetY = clamp(palla.y - VIEW_H * ancora, 0, WORLD_H - VIEW_H);
+    const targetY = clamp(palla.y - VIEW_H / 2, 0, WORLD_H - VIEW_H);
     camera.x += (targetX - camera.x) * 0.15;
     camera.y += (targetY - camera.y) * 0.15;
 }
@@ -269,7 +269,7 @@ function preparaPartita() {
         golDoppio: false, ruota: false,
         matchball: false, target: 0,
         nIn: 1, celebraT: 0, shootT: 0, fineDopoGol: false,
-        shoot: null, risultato: null
+        shoot: null, risultato: null, ripresa: null
     };
     setGiocatoriInCampo(1, true);
     mettiPallaAlCentro();
@@ -335,6 +335,7 @@ function golRilevato(perCasa, forzato) {
 function ripartiDopoGol() {
     if (partita.fineDopoGol) { terminaPartita('V'); return; }
     partita.fase = 'gioco';
+    partita.ripresa = null;
     setGiocatoriInCampo(partita.nIn, true);
     mettiPallaAlCentro();
 }
@@ -530,10 +531,12 @@ function disegnaGiocatore(g, squadra) {
 }
 
 // --- DIFFICOLTÀ: parametri degli avversari (i tuoi compagni giocano sempre a livello MEDIO) ---
+// Portiere: esce = quanto può uscire dalla linea di porta (px), raggio = quanto lontano arriva a parare,
+// velP = velocità con cui si muove
 const DIFFICOLTA = {
-    FACILE:    { vel: 0.85, press: 75,  parata: 0.30, contrasto: 0.25, errore: 0.30, penso: 30 },
-    MEDIO:     { vel: 1.05, press: 110, parata: 0.55, contrasto: 0.45, errore: 0.16, penso: 16 },
-    DIFFICILE: { vel: 1.25, press: 150, parata: 0.80, contrasto: 0.65, errore: 0.07, penso: 8 }
+    FACILE:    { vel: 0.85, press: 75,  parata: 0.30, contrasto: 0.25, errore: 0.30, penso: 30, esce: 24, raggio: 11, velP: 0.95 },
+    MEDIO:     { vel: 1.05, press: 110, parata: 0.55, contrasto: 0.45, errore: 0.16, penso: 16, esce: 36, raggio: 14, velP: 1.15 },
+    DIFFICILE: { vel: 1.25, press: 150, parata: 0.80, contrasto: 0.65, errore: 0.07, penso: 8,  esce: 48, raggio: 17, velP: 1.4 }
 };
 function parametriIA(sq) {
     if (sq === squadraOspite) return DIFFICOLTA[difficoltaInUso || gameState.difficulty] || DIFFICOLTA.MEDIO;
@@ -761,7 +764,7 @@ function scegliPassaggioAvanti(p, sq, minAvanz) {
 
 // --- PORTIERE ---
 function aggiornaPortiere(p, sq, par, mio) {
-    const linea = formazioneDi(sq)[0].y;
+    if (p.contrT > 0) p.contrT--;
     if (mio) {
         p.inMovimento = false;
         p.tenutaT--;
@@ -772,19 +775,61 @@ function aggiornaPortiere(p, sq, par, mio) {
         }
         return;
     }
-    const tx = clamp(palla.x, centroX - 22, centroX + 22);
-    if (!muoviVerso(p, tx, linea, par.vel)) {
+    const casa = sq === squadraCasa;                              // la tua squadra difende la porta in basso
+    const lineaPorta = casa ? campo.y + campo.height : campo.y;
+    const titolare = palla.titolare;
+    const attaccante = titolare && squadraDi(titolare) !== sq ? titolare : null;
+    const dPalla = Math.hypot(palla.x - centroX, palla.y - lineaPorta);
+    const velPalla = Math.hypot(palla.vx, palla.vy);
+    let tx, ty, vel = par.velP;
+
+    if (!titolare && dPalla < par.esce + 22 && velPalla < 2.4) {
+        // palla libera e lenta vicino alla porta: esco a prenderla
+        tx = palla.x; ty = palla.y; vel = par.velP * 1.25;
+    } else if (attaccante && dPalla < 120 && Math.hypot(attaccante.x - p.x, attaccante.y - p.y) < par.esce + 60) {
+        // un attaccante con la palla è in area: esco a chiudergli lo spazio e provo a togliergli la palla
+        const dx = centroX - attaccante.x, dy = lineaPorta - attaccante.y;
+        const l = Math.hypot(dx, dy) || 1;
+        tx = attaccante.x + (dx / l) * 10; ty = attaccante.y + (dy / l) * 10;
+        vel = par.velP * 1.2;
+        if (Math.hypot(attaccante.x - p.x, attaccante.y - p.y) < 13 && p.contrT <= 0 && attaccante.stun <= 0) {
+            p.contrT = 55;
+            p.calcioT = 8;
+            if (Math.random() < par.parata * 0.7 && !(attaccante.dribT > 0)) {
+                attaccante.stun = 25;
+                prendiPalla(p);
+                p.tenutaT = casa ? 300 : 60;
+                mostraBanner('USCITA!', 0.8, false);
+                return;
+            }
+        }
+    } else {
+        // copertura: sulla linea tra il centro della porta e la palla, più avanti quanto più la palla è vicina
+        const ux = (palla.x - centroX) / (dPalla || 1), uy = (palla.y - lineaPorta) / (dPalla || 1);
+        const base = 17;
+        const D = base + (par.esce - base) * clamp(1 - dPalla / 260, 0, 1);
+        tx = clamp(centroX + ux * D, centroX - (PORTA_META + 10), centroX + (PORTA_META + 10));
+        ty = lineaPorta + uy * D;
+    }
+    // il portiere resta dentro la sua area
+    tx = clamp(tx, centroX - 70, centroX + 70);
+    ty = casa ? clamp(ty, lineaPorta - 70, lineaPorta - 6) : clamp(ty, lineaPorta + 6, lineaPorta + 70);
+    if (!muoviVerso(p, tx, ty, vel)) {
         p.dir = direzioneVerso(palla.x - p.x, palla.y - p.y);
     }
-    // parata: una sola possibilità per ogni tiro
+
+    // parata: una sola possibilità per ogni tiro; se la manca, a volte lo devia
     if (!palla.titolare && !palla.parata) {
-        const versoMiaPorta = sq === squadraCasa ? palla.vy > 0.5 : palla.vy < -0.5;
-        if (versoMiaPorta && Math.hypot(palla.x - p.x, palla.y - (p.y - 6)) < 13) {
+        const versoMiaPorta = casa ? palla.vy > 0.5 : palla.vy < -0.5;
+        if (versoMiaPorta && Math.hypot(palla.x - p.x, palla.y - (p.y - 6)) < par.raggio) {
             palla.parata = true;
             if (Math.random() < par.parata) {
                 prendiPalla(p);
-                p.tenutaT = sq === squadraCasa ? 300 : 60;   // se è il tuo, hai ~5 secondi per decidere
+                p.tenutaT = casa ? 300 : 60;   // se è il tuo, hai ~5 secondi per decidere
                 mostraBanner('PARATA!', 0.9, false);
+            } else if (Math.random() < 0.35) {
+                palla.vx += (palla.x < centroX ? -1 : 1) * 0.9;     // deviazione: può finire in calcio d'angolo
+                palla.ultimaSq = sq;
             }
         }
     }
@@ -950,6 +995,74 @@ function cambiaGiocatore() {
     bloccoCambioT = 90;
 }
 
+// --- PALLONE FUORI: RIMESSA LATERALE, RIMESSA DAL FONDO, CALCIO D'ANGOLO ---
+// Rimessa laterale: palla fuori dai lati, la batte la squadra che non l'ha toccata per ultima.
+// Linea di fondo fuori dai pali: se l'ultimo tocco è dell'attaccante è rimessa dal fondo (la batte il portiere),
+// se è stata deviata dalla squadra che difende è calcio d'angolo per gli attaccanti.
+function avviaRipresa(tipo, bx, by) {
+    const ultimo = palla.ultimaSq;
+    let sq, nome, x, y, px, py;
+    if (tipo === 'laterale') {
+        sq = ultimo ? avversariDi(ultimo) : (Math.random() < 0.5 ? squadraCasa : squadraOspite);
+        nome = 'RIMESSA LATERALE';
+        const sinistra = bx < centroX;
+        x = sinistra ? campo.x : campo.x + campo.width;
+        y = clamp(by, campo.y + 14, campo.y + campo.height - 14);
+        px = x + (sinistra ? 8 : -8); py = y;
+    } else {
+        const alta = by < centroY;                                  // linea di fondo in alto = porta degli ospiti
+        const difende = alta ? squadraOspite : squadraCasa;
+        if (ultimo === difende) {
+            sq = avversariDi(difende);
+            nome = "CALCIO D'ANGOLO";
+            const sinistra = bx < centroX;
+            x = sinistra ? campo.x + 3 : campo.x + campo.width - 3;
+            y = alta ? campo.y + 3 : campo.y + campo.height - 3;
+            px = x + (sinistra ? 7 : -7); py = y + (alta ? 5 : -5);
+        } else {
+            sq = difende;
+            nome = 'RIMESSA DAL FONDO';
+            const yPorta = formazioneDi(difende)[0].y;
+            x = centroX; y = yPorta + (alta ? 7 : -7);
+            px = centroX; py = yPorta;
+        }
+    }
+    partita.ripresa = { tipo: (tipo === 'laterale' ? 'laterale' : (nome === "CALCIO D'ANGOLO" ? 'angolo' : 'fondo')), sq: sq, bx: x, by: y, px: px, py: py, t: 55 };
+    palla.titolare = null;
+    palla.vx = 0; palla.vy = 0;
+    palla.x = x; palla.y = y;
+    azioniCoda.length = 0;
+    mostraBanner(nome, 1.2, false);
+}
+
+function eseguiRipresa() {
+    const r = partita.ripresa;
+    partita.ripresa = null;
+    const giocatori = inCampo(r.sq);
+    let tiratore = r.tipo === 'fondo' ? giocatori.find(p => p.ruolo === 'POR') : null;
+    if (!tiratore) {
+        const altri = giocatori.filter(p => p.ruolo !== 'POR');
+        const lista = altri.length ? altri : giocatori;
+        lista.sort((a, b) => Math.hypot(a.x - r.bx, a.y - r.by) - Math.hypot(b.x - r.bx, b.y - r.by));
+        tiratore = lista[0];
+    }
+    if (!tiratore) { mettiPallaAlCentro(); return; }
+    tiratore.x = r.px; tiratore.y = r.py;
+    // guarda verso il campo
+    const dx = centroX - tiratore.x, dy = centroY - tiratore.y;
+    const l = Math.hypot(dx, dy) || 1;
+    tiratore.mx = dx / l; tiratore.my = dy / l;
+    tiratore.dir = direzioneVerso(dx, dy);
+    tiratore.inMovimento = false;
+    tiratore.stun = 0;
+    palla.x = r.bx; palla.y = r.by;
+    prendiPalla(tiratore);
+    palla.blocco = 0;
+    palla.tiroX = tiratore.x; palla.tiroY = tiratore.y;
+    palla.ultimaSq = r.sq;
+    if (tiratore.ruolo === 'POR') tiratore.tenutaT = r.sq === squadraCasa ? 300 : 60;
+}
+
 // --- PALLONE: fisica, gol e raccolta ---
 function aggiornaPalla() {
     const t = palla.titolare;
@@ -958,24 +1071,23 @@ function aggiornaPalla() {
         const lenv = Math.hypot(t.mx, t.my) || 1;
         palla.x += (t.x + (t.mx / lenv) * 7 - palla.x) * 0.35;
         palla.y += (t.y - 3 + (t.my / lenv) * 5 - palla.y) * 0.35;
+        palla.x = clamp(palla.x, campo.x + 1, campo.x + campo.width - 1);     // portando palla non si esce dal campo
         return;
     }
     palla.x += palla.vx;
     palla.y += palla.vy;
     palla.vx *= 0.97;
     palla.vy *= 0.97;
-    if (palla.x < campo.x + 2 || palla.x > campo.x + campo.width - 2) {
-        palla.vx *= -1;
-        palla.x = clamp(palla.x, campo.x + 2, campo.x + campo.width - 2);
-    }
+    // fuori dai lati del campo: rimessa laterale
+    if (palla.x < campo.x || palla.x > campo.x + campo.width) { avviaRipresa('laterale', palla.x, palla.y); return; }
     const inPorta = Math.abs(palla.x - centroX) <= PORTA_META;
     const lineaAlta = campo.y, lineaBassa = campo.y + campo.height;
     if (palla.y < lineaAlta) {
-        if (!inPorta) { palla.vy = Math.abs(palla.vy); palla.y = lineaAlta; }
-        else if (palla.y < lineaAlta - 5) { golRilevato(true, false); return; }
+        if (inPorta) { if (palla.y < lineaAlta - 5) { golRilevato(true, false); return; } }
+        else { avviaRipresa('fondo', palla.x, palla.y); return; }       // fuori dalla linea di fondo
     } else if (palla.y > lineaBassa) {
-        if (!inPorta) { palla.vy = -Math.abs(palla.vy); palla.y = lineaBassa; }
-        else if (palla.y > lineaBassa + 5) { golRilevato(false, false); return; }
+        if (inPorta) { if (palla.y > lineaBassa + 5) { golRilevato(false, false); return; } }
+        else { avviaRipresa('fondo', palla.x, palla.y); return; }
     }
     // raccolta: il giocatore più vicino (non stordito) prende la palla
     if (palla.blocco > 0) { palla.blocco--; return; }
@@ -992,6 +1104,13 @@ function aggiornaPalla() {
 
 function aggiornaGiocoDiProva() {
     if (partita.fase !== 'gioco') return;
+    if (partita.ripresa) {
+        // breve pausa prima della ripresa (il cronometro continua)
+        azioniCoda.length = 0;
+        partita.ripresa.t--;
+        if (partita.ripresa.t <= 0) eseguiRipresa();
+        return;
+    }
     sceltaGiocatoreUtente();
     const g = giocatoreUtente;     // il giocatore che controlli in questo momento
 
@@ -1238,8 +1357,13 @@ function avviaLoop() {
 // perfetto; la finestra della camera si adatta alle dimensioni dello schermo (telefono o PC).
 function aggiornaScala() {
     const dpr = window.devicePixelRatio || 1;
+    // sul telefono il campo sta sopra una fascia riservata ai comandi, così non li ha mai sotto
+    const ts = { small: 0.8, medium: 1, large: 1.2 }[impostazioni.touchSize] || 1;
+    const pannello = touchVisibile ? Math.round(PANNELLO_TOUCH * ts) : 0;
+    gameplayScreen.classList.toggle('con-touch', touchVisibile);
+    gameplayScreen.style.setProperty('--pannello', pannello + 'px');
     const fisW = window.innerWidth * dpr;
-    const fisH = window.innerHeight * dpr;
+    const fisH = Math.max(100, window.innerHeight - pannello) * dpr;
     const scala = Math.max(2, Math.round(Math.min(fisW / BASE_W, fisH / BASE_H)));
 
     VIEW_W = Math.min(WORLD_W, Math.ceil(fisW / scala));
@@ -1509,6 +1633,7 @@ function applicaTouch() {
     ['small', 'medium', 'large'].forEach(c => touchUi.classList.toggle(c, c === impostazioni.touchSize));
     if (!touchVisibile) { joyRilascia(); kInizio = 0; }
     touchCache = '';
+    aggiornaScala();
 }
 
 // --- impostazioni: cambio giocatore, joypad touch, dimensione tasti ---
