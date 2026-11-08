@@ -475,13 +475,13 @@ h1 {
 }
 #tbtn-speciale {
     right: calc(22px * var(--ts));
-    bottom: calc(190px * var(--ts));
+    bottom: calc(186px * var(--ts));
 }
 
 /* tasto con le due frecce che cambia tra CARTA e RIGORE PRESIDENZIALE */
 .tbtn-micro {
     right: calc(84px * var(--ts));
-    bottom: calc(200px * var(--ts));
+    bottom: calc(196px * var(--ts));
     width: calc(34px * var(--ts));
     height: calc(34px * var(--ts));
     font-size: calc(7px * var(--ts));
@@ -566,4 +566,13 @@ h1 {
     z-index: 7;
     font-size: 10px;
     padding: 12px 22px;
+}
+
+/* telefono: il campo sta sopra la fascia dei comandi (altezza impostata da script.js) */
+#gameplay-screen.con-touch {
+    justify-content: flex-start;      /* il campo parte dall'alto, i comandi stanno nella fascia sotto */
+}
+#gameplay-screen.con-touch .field-container {
+    height: calc(100% - var(--pannello, 0px));
+    flex: none;
 }
