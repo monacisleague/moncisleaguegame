@@ -60,7 +60,7 @@ const BASE_W = 192;
 const BASE_H = 426;
 let VIEW_W = BASE_W;
 let VIEW_H = BASE_H;
-const PANNELLO_TOUCH = 248;           // altezza (px) della fascia dei comandi sul telefono, con tasti di dimensione media
+const PANNELLO_TOUCH = 252;           // altezza (px) della zona occupata dai comandi sul telefono, con tasti di dimensione media
 const WORLD_W = 352;
 const WORLD_H = 676;
 
@@ -108,7 +108,8 @@ function clamp(v, min, max) {
 
 function aggiornaCamera() {
     const targetX = clamp(palla.x - VIEW_W / 2, 0, WORLD_W - VIEW_W);
-    const targetY = clamp(palla.y - VIEW_H / 2, 0, WORLD_H - VIEW_H);
+    // l'azione si centra nella parte di schermo libera dai comandi (sopra la zona dei joystick)
+    const targetY = clamp(palla.y - (VIEW_H - margineComandi) / 2, 0, WORLD_H - VIEW_H + margineComandi);
     camera.x += (targetX - camera.x) * 0.15;
     camera.y += (targetY - camera.y) * 0.15;
 }
@@ -161,6 +162,7 @@ let kInizio = 0;                // da quando tieni premuto TIRO sul telefono (se
 const joy = { attivo: false, x: 0, y: 0 };          // joystick analogico, valori da -1 a 1
 let modoSpeciale = 'carta';     // il tasto speciale può essere 'carta' o 'rigore'
 let touchVisibile = false;
+let margineComandi = 0;          // quanto schermo (in pixel del gioco) occupano i comandi in basso; la camera può scorrere oltre il fondo per quella misura
 // Preferenze del giocatore (si salvano nel browser)
 const impostazioni = { cambio: 'automatico', touch: true, touchSize: 'medium' };
 let bannerAttivo = null;
@@ -274,7 +276,7 @@ function preparaPartita() {
     setGiocatoriInCampo(1, true);
     mettiPallaAlCentro();
     camera.x = clamp(palla.x - VIEW_W / 2, 0, WORLD_W - VIEW_W);
-    camera.y = clamp(palla.y - VIEW_H / 2, 0, WORLD_H - VIEW_H);
+    camera.y = clamp(palla.y - (VIEW_H - margineComandi) / 2, 0, WORLD_H - VIEW_H + margineComandi);
     bannerAttivo = null;
     hudCache = '';
     ultimoTick = performance.now();
@@ -1304,7 +1306,9 @@ function drawGame() {
 
     if (img.complete && img.naturalWidth > 0) {
         // coordinate camera arrotondate per evitare sfarfallii dei pixel
-        ctx.drawImage(img, Math.round(camera.x), Math.round(camera.y), VIEW_W, VIEW_H, 0, 0, VIEW_W, VIEW_H);
+        const sy = Math.round(camera.y);
+        const alt = Math.min(VIEW_H, WORLD_H - sy);        // oltre il fondo non c'è immagine: resta lo sfondo scuro
+        if (alt > 0) ctx.drawImage(img, Math.round(camera.x), sy, VIEW_W, alt, 0, 0, VIEW_W, alt);
     } else {
         ctx.fillStyle = '#1b5e20';
         ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -1357,19 +1361,18 @@ function avviaLoop() {
 // perfetto; la finestra della camera si adatta alle dimensioni dello schermo (telefono o PC).
 function aggiornaScala() {
     const dpr = window.devicePixelRatio || 1;
-    // sul telefono il campo sta sopra una fascia riservata ai comandi, così non li ha mai sotto
-    const ts = { small: 0.8, medium: 1, large: 1.2 }[impostazioni.touchSize] || 1;
-    const pannello = touchVisibile ? Math.round(PANNELLO_TOUCH * ts) : 0;
-    gameplayScreen.classList.toggle('con-touch', touchVisibile);
-    gameplayScreen.style.setProperty('--pannello', pannello + 'px');
     const fisW = window.innerWidth * dpr;
-    const fisH = Math.max(100, window.innerHeight - pannello) * dpr;
+    const fisH = window.innerHeight * dpr;
     const scala = Math.max(2, Math.round(Math.min(fisW / BASE_W, fisH / BASE_H)));
 
     VIEW_W = Math.min(WORLD_W, Math.ceil(fisW / scala));
     VIEW_H = Math.min(WORLD_H, Math.ceil(fisH / scala));
     canvas.width = VIEW_W;
     canvas.height = VIEW_H;
+    // zona occupata dai comandi sul telefono, convertita in pixel del gioco
+    const tsComandi = { small: 0.8, medium: 1, large: 1.2 }[impostazioni.touchSize] || 1;
+    margineComandi = touchVisibile ? Math.round(PANNELLO_TOUCH * tsComandi * dpr / scala) : 0;
+    margineComandi = Math.min(margineComandi, Math.round(VIEW_H * 0.45));
     canvas.style.width = (VIEW_W * scala / dpr) + 'px';
     canvas.style.height = (VIEW_H * scala / dpr) + 'px';
     ctx.imageSmoothingEnabled = false;
