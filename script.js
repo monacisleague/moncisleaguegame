@@ -64,10 +64,14 @@ const PANNELLO_TOUCH = 252;           // altezza (px) della zona occupata dai co
 const WORLD_W = 352;
 const WORLD_H = 676;
 
+// Versione delle immagini: se sostituisci giocatori.png o gli stadio_frame, aumenta questo numero (2, 3, 4...)
+// così il browser scarica subito i file nuovi invece di usare quelli vecchi salvati in memoria.
+const VERSIONE_IMMAGINI = '2';
+
 // Due immagini = due frame dell'animazione della folla
 const stadioFrames = [new Image(), new Image()];
-stadioFrames[0].src = 'stadio_frame0.png';
-stadioFrames[1].src = 'stadio_frame1.png';
+stadioFrames[0].src = 'stadio_frame0.png?v=' + VERSIONE_IMMAGINI;
+stadioFrames[1].src = 'stadio_frame1.png?v=' + VERSIONE_IMMAGINI;
 
 // Area di gioco dentro le linee (coordinate del mondo)
 const campo = { x: 32, y: 82, width: 288, height: 512 };
@@ -115,11 +119,11 @@ function aggiornaCamera() {
 }
 
 // --- GIOCATORI: SPRITE E SQUADRE ---
-// giocatori.png contiene 24 calciatori (6 squadre x 4 giocatori), nello stesso ordine di teamsList.
+// giocatori_nuovi.png contiene 24 calciatori (6 squadre x 4 giocatori), nello stesso ordine di teamsList.
 // Per ogni giocatore: 3 righe (davanti, dietro, di lato) x 4 frame (fermo, corsa A, corsa B, calcio).
 const sprite = new Image();
-sprite.src = 'giocatori.png';
-const CELLA_W = 16, CELLA_H = 20;
+sprite.src = 'giocatori_nuovi.png?v=' + VERSIONE_IMMAGINI;      // file nuovo, con un nome diverso dal vecchio giocatori.png
+const CELLA_W = 20, CELLA_H = 26;       // dimensione di ogni sprite in giocatori_nuovi.png
 const DIR = { GIU: 0, SU: 1, DESTRA: 2, SINISTRA: 3 };
 const SEQ_CORSA = [1, 0, 2, 0];
 
@@ -464,21 +468,21 @@ function disegnaGiocatore(g, squadra) {
     const y = Math.round(g.y - camera.y);
     // ombra
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fillRect(x - 5, y - 1, 10, 3);
+    ctx.fillRect(x - 7, y - 1, 14, 3);
     const evidenzia = (g === giocatoreUtente && squadra === squadraCasa);
     if (evidenzia) {
         ctx.fillStyle = '#ff9a1f';
-        ctx.fillRect(x - 4, y - 2, 9, 1);
-        ctx.fillRect(x - 6, y - 1, 2, 1); ctx.fillRect(x + 5, y - 1, 2, 1);
-        ctx.fillRect(x - 7, y, 1, 1);     ctx.fillRect(x + 7, y, 1, 1);
-        ctx.fillRect(x - 6, y + 1, 2, 1); ctx.fillRect(x + 5, y + 1, 2, 1);
-        ctx.fillRect(x - 4, y + 2, 9, 1);
+        ctx.fillRect(x - 5, y - 2, 11, 1);
+        ctx.fillRect(x - 7, y - 1, 2, 1); ctx.fillRect(x + 6, y - 1, 2, 1);
+        ctx.fillRect(x - 8, y, 1, 1);     ctx.fillRect(x + 8, y, 1, 1);
+        ctx.fillRect(x - 7, y + 1, 2, 1); ctx.fillRect(x + 6, y + 1, 2, 1);
+        ctx.fillRect(x - 5, y + 2, 11, 1);
     }
 
     if (!(sprite.complete && sprite.naturalWidth > 0)) {
         // se l'immagine non è ancora caricata: segnaposto nel colore della squadra
         ctx.fillStyle = squadra.colore;
-        ctx.fillRect(x - 4, y - 14, 8, 13);
+        ctx.fillRect(x - 5, y - 20, 10, 19);
         return;
     }
     const indice = squadra.idx * 4 + g.slot;
@@ -493,19 +497,19 @@ function disegnaGiocatore(g, squadra) {
         ctx.save();
         ctx.translate(x, 0);
         ctx.scale(-1, 1);
-        ctx.drawImage(sprite, sx, sy, CELLA_W, CELLA_H, -CELLA_W / 2, y - 19, CELLA_W, CELLA_H);
+        ctx.drawImage(sprite, sx, sy, CELLA_W, CELLA_H, -CELLA_W / 2, y - (CELLA_H - 1), CELLA_W, CELLA_H);
         ctx.restore();
     } else {
-        ctx.drawImage(sprite, sx, sy, CELLA_W, CELLA_H, x - CELLA_W / 2, y - 19, CELLA_W, CELLA_H);
+        ctx.drawImage(sprite, sx, sy, CELLA_W, CELLA_H, x - CELLA_W / 2, y - (CELLA_H - 1), CELLA_W, CELLA_H);
     }
 
     if (evidenzia) {
         // freccia arancione sopra la testa
         ctx.fillStyle = '#ff9a1f';
-        ctx.fillRect(x - 3, y - 27, 7, 1);
-        ctx.fillRect(x - 2, y - 26, 5, 1);
-        ctx.fillRect(x - 1, y - 25, 3, 1);
-        ctx.fillRect(x, y - 24, 1, 1);
+        ctx.fillRect(x - 3, y - 34, 7, 1);
+        ctx.fillRect(x - 2, y - 33, 5, 1);
+        ctx.fillRect(x - 1, y - 32, 3, 1);
+        ctx.fillRect(x, y - 31, 1, 1);
         // barra del fiato (si vede solo quando non è piena)
         if (fiatoUtente < 100) {
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -517,17 +521,17 @@ function disegnaGiocatore(g, squadra) {
         if (kInizio > 0) {
             const caricaT = Math.min(1, (performance.now() - kInizio) / TEMPO_POTENZA_TIRO);
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(x - 7, y - 36, 14, 3);
+            ctx.fillRect(x - 7, y - 43, 14, 3);
             ctx.fillStyle = caricaT >= 1 ? '#ff4040' : '#ff9a1f';
-            ctx.fillRect(x - 6, y - 35, Math.round(12 * caricaT), 1);
+            ctx.fillRect(x - 6, y - 42, Math.round(12 * caricaT), 1);
         }
         // carica del passaggio lungo mentre tieni premuto J
         if (jInizio > 0) {
             const carica = Math.min(1, (performance.now() - jInizio) / TEMPO_PASSAGGIO_LUNGO);
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(x - 7, y - 32, 14, 3);
+            ctx.fillRect(x - 7, y - 39, 14, 3);
             ctx.fillStyle = carica >= 1 ? '#ffd700' : '#ffffff';
-            ctx.fillRect(x - 6, y - 31, Math.round(12 * carica), 1);
+            ctx.fillRect(x - 6, y - 38, Math.round(12 * carica), 1);
         }
     }
 }
