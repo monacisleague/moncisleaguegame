@@ -177,6 +177,11 @@ const hudPunteggio = document.getElementById('scoreboard');
 const hudStato = document.createElement('div');
 hudStato.className = 'gold-subheading';
 document.querySelector('.gameplay-header').appendChild(hudStato);
+const hudSO = document.createElement('div');          // risultati dei tiri dello shootout
+hudSO.className = 'gold-subheading';
+hudSO.style.whiteSpace = 'pre';
+hudSO.style.lineHeight = '1.7';
+document.querySelector('.gameplay-header').appendChild(hudSO);
 
 function abbreviazione(nome) {
     return nome.replace(/\bFC\b/g, '').trim().slice(0, 3);
@@ -275,10 +280,12 @@ function preparaPartita() {
         golDoppio: false, ruota: false,
         matchball: false, target: 0,
         nIn: 1, celebraT: 0, shootT: 0, fineDopoGol: false,
-        shoot: null, risultato: null, ripresa: null
+        shoot: null, risultato: null, ripresa: null,
+        so: null, ripartenza: null, inCorsa: false, subisce: null
     };
     setGiocatoriInCampo(1, true);
-    mettiPallaAlCentro();
+    avviaCorsa();               // 1 contro 1: partono dalle aree di rigore e corrono verso la palla al centro
+    hudSO.textContent = '';
     camera.x = clamp(palla.x - VIEW_W / 2, 0, WORLD_W - VIEW_W);
     camera.y = clamp(palla.y - (VIEW_H - margineComandi) / 2, 0, WORLD_H - VIEW_H + margineComandi);
     bannerAttivo = null;
@@ -323,6 +330,7 @@ function golValido(perCasa) {
 
 function golRilevato(perCasa, forzato) {
     const p = partita;
+    if (p.so && p.so.attivo) { golShootout(perCasa); return; }
     if (!forzato && !golValido(perCasa)) {
         mostraBanner('GOL NON VALIDO', 1.8);
         palla.vy = perCasa ? Math.abs(palla.vy) : -Math.abs(palla.vy);
@@ -331,6 +339,7 @@ function golRilevato(perCasa, forzato) {
     }
     const punti = p.golDoppio ? 2 : 1;
     if (perCasa) p.golCasa += punti; else p.golOsp += punti;
+    p.subisce = perCasa ? squadraOspite : squadraCasa;        // chi ha subito il gol riparte
     mostraBanner(p.golDoppio ? 'GOL x2!' : 'GOL!', GOL_FESTA_SEC, true);
     p.fase = 'gol';
     p.celebraT = GOL_FESTA_SEC;
@@ -344,17 +353,16 @@ function ripartiDopoGol() {
     partita.ripresa = null;
     setGiocatoriInCampo(partita.nIn, true);
     mettiPallaAlCentro();
+    // 1 contro 1: rimessa dal fondo per chi ha subito il gol; da 2 contro 2 in su si riparte dal centrocampo
+    if (partita.nIn === 1) ripartenzaDalFondo(partita.subisce);
+    else ripartenzaDalCentro(partita.subisce);
 }
 
 // --- FINE TEMPO: SHOOTOUT O MATCHBALL ---
 function fineTempo() {
     const p = partita;
     if (p.golCasa === p.golOsp) {
-        // PROVVISORIO: gli shootout vengono simulati in automatico (regolamento da completare)
-        p.fase = 'shootout';
-        p.shoot = simulaShootout();
-        p.shootT = 3;
-        mostraBanner('SHOOTOUT', 3, true);
+        avviaShootout();
     } else {
         p.matchball = true;
         p.target = Math.max(p.golCasa, p.golOsp) + 1;
@@ -363,6 +371,7 @@ function fineTempo() {
     }
 }
 
+// simulazione veloce di uno shootout: serve solo per le partite del campionato che non giochi tu
 function simulaShootout() {
     let casa = 0, osp = 0;
     for (let i = 0; i < 4; i++) {
@@ -410,12 +419,14 @@ function aggiornaPartita(dt) {
         if (p.celebraT <= 0) ripartiDopoGol();
         return;
     }
-    if (p.fase === 'shootout') {
-        p.shootT -= dt;
-        if (p.shootT <= 0) terminaPartita('S');
+    if (p.fase !== 'gioco') return;
+    if (p.so && p.so.attivo) { aggiornaShootout(dt); return; }
+    if (p.ripartenza) {
+        // conto alla rovescia prima della corsa verso la palla: il cronometro è fermo
+        p.ripartenza.t -= dt;
+        if (p.ripartenza.t <= 0) { p.ripartenza = null; mostraBanner('VIA!', 0.8, true); }
         return;
     }
-    if (p.fase !== 'gioco') return;
 
     const prima = p.minuto;
     p.minuto += dt / SECONDI_REALI_PER_MINUTO;
@@ -427,7 +438,17 @@ function aggiornaPartita(dt) {
             p.golDoppio = false; p.ruota = true;
             mostraBanner('LA RUOTA', 2.5, true);     // PROVVISORIO: la Ruota è ancora da definire
         }
-        if (prima < MIN_RUOTA_FINE && m >= MIN_RUOTA_FINE) { p.ruota = false; mostraBanner('4 CONTRO 4', 1.5); }
+        if (prima < MIN_RUOTA_FINE && m >= MIN_RUOTA_FINE) {
+            p.ruota = false;
+            mostraBanner('4 CONTRO 4', 1.5);
+            // si riparte in 4 contro 4: in parità tutti corrono verso la palla dalle aree, altrimenti batte la squadra che sta perdendo
+            if (p.golCasa === p.golOsp) avviaCorsa();
+            else {
+                setGiocatoriInCampo(p.nIn, true);
+                mettiPallaAlCentro();
+                ripartenzaDalCentro(p.golCasa < p.golOsp ? squadraCasa : squadraOspite);
+            }
+        }
         if (m >= MIN_FINE) { p.minuto = MIN_FINE; fineTempo(); return; }
     }
 
@@ -441,6 +462,7 @@ function aggiornaPartita(dt) {
 
 function aggiornaHud() {
     const p = partita;
+    if (p.so && p.so.attivo) { aggiornaHudShootout(); return; }
     const abb = abbreviazione(squadraCasa.nome) + ' ' + p.golCasa + ' - ' + p.golOsp + ' ' + abbreviazione(squadraOspite.nome);
     const tempo = p.matchball ? 'MB ' + p.target : Math.min(MIN_FINE, Math.floor(p.minuto)) + "'";
     let stato = p.nIn + 'v' + p.nIn;
@@ -537,12 +559,13 @@ function disegnaGiocatore(g, squadra) {
 }
 
 // --- DIFFICOLTÀ: parametri degli avversari (i tuoi compagni giocano sempre a livello MEDIO) ---
-// Portiere: esce = quanto può uscire dalla linea di porta (px), raggio = quanto lontano arriva a parare,
-// velP = velocità con cui si muove
+// Portiere: esce = quanto può uscire dalla linea di porta (px; l'area piccola arriva a 20),
+// raggio = quanto lontano arriva a parare, velP = velocità, uscita = probabilità di togliere la palla all'attaccante,
+// reazione = frame che il portiere impiega a muoversi dopo che parte un tiro
 const DIFFICOLTA = {
-    FACILE:    { vel: 0.85, press: 75,  parata: 0.30, contrasto: 0.25, errore: 0.30, penso: 30, esce: 24, raggio: 11, velP: 0.95 },
-    MEDIO:     { vel: 1.05, press: 110, parata: 0.55, contrasto: 0.45, errore: 0.16, penso: 16, esce: 36, raggio: 14, velP: 1.15 },
-    DIFFICILE: { vel: 1.25, press: 150, parata: 0.80, contrasto: 0.65, errore: 0.07, penso: 8,  esce: 48, raggio: 17, velP: 1.4 }
+    FACILE:    { vel: 0.85, press: 75,  parata: 0.30, contrasto: 0.25, errore: 0.30, penso: 30, esce: 20, raggio: 10, velP: 0.95, uscita: 0.08, reazione: 16 },
+    MEDIO:     { vel: 1.05, press: 110, parata: 0.55, contrasto: 0.45, errore: 0.16, penso: 16, esce: 26, raggio: 12, velP: 1.10, uscita: 0.16, reazione: 10 },
+    DIFFICILE: { vel: 1.25, press: 150, parata: 0.80, contrasto: 0.65, errore: 0.07, penso: 8,  esce: 34, raggio: 14, velP: 1.30, uscita: 0.26, reazione: 5 }
 };
 function parametriIA(sq) {
     if (sq === squadraOspite) return DIFFICOLTA[difficoltaInUso || gameState.difficulty] || DIFFICOLTA.MEDIO;
@@ -712,6 +735,11 @@ function calcia(p, vx, vy) {
     p.dir = direzioneVerso(vx, vy);
     p.mx = vx / Math.hypot(vx, vy);
     p.my = vy / Math.hypot(vx, vy);
+    // shootout: il tiro è partito
+    if (partita && partita.so && partita.so.attivo && partita.so.fase === 'tiro' && p === partita.so.tiratore && !partita.so.tiroFatto) {
+        partita.so.tiroFatto = true;
+        partita.so.esitoT = 3.5;
+    }
 }
 
 function passaA(p, q, errore, vMax) {
@@ -731,6 +759,7 @@ function prendiPalla(p) {
     palla.parata = false;
     palla.ultimaSq = squadraDi(p);
     p.pensaT = parametriIA(squadraDi(p)).penso;
+    if (partita) partita.inCorsa = false;       // qualcuno ha preso la palla: la corsa è finita
 }
 
 // Compagno a cui passare: il più avanzato (verso la porta avversaria) entro 190 px
@@ -789,10 +818,11 @@ function aggiornaPortiere(p, sq, par, mio) {
     const velPalla = Math.hypot(palla.vx, palla.vy);
     let tx, ty, vel = par.velP;
 
-    if (!titolare && dPalla < par.esce + 22 && velPalla < 2.4) {
+    const maxD = par.esce + 6;                       // oltre questa distanza dalla linea di porta non esce mai
+    if (!titolare && dPalla < par.esce + 10 && velPalla < 2.2) {
         // palla libera e lenta vicino alla porta: esco a prenderla
         tx = palla.x; ty = palla.y; vel = par.velP * 1.25;
-    } else if (attaccante && dPalla < 120 && Math.hypot(attaccante.x - p.x, attaccante.y - p.y) < par.esce + 60) {
+    } else if (attaccante && dPalla < 85 && Math.hypot(attaccante.x - p.x, attaccante.y - p.y) < par.esce + 28) {
         // un attaccante con la palla è in area: esco a chiudergli lo spazio e provo a togliergli la palla
         const dx = centroX - attaccante.x, dy = lineaPorta - attaccante.y;
         const l = Math.hypot(dx, dy) || 1;
@@ -801,7 +831,7 @@ function aggiornaPortiere(p, sq, par, mio) {
         if (Math.hypot(attaccante.x - p.x, attaccante.y - p.y) < 13 && p.contrT <= 0 && attaccante.stun <= 0) {
             p.contrT = 55;
             p.calcioT = 8;
-            if (Math.random() < par.parata * 0.7 && !(attaccante.dribT > 0)) {
+            if (Math.random() < par.uscita && !(attaccante.dribT > 0)) {
                 attaccante.stun = 25;
                 prendiPalla(p);
                 p.tenutaT = casa ? 300 : 60;
@@ -818,18 +848,27 @@ function aggiornaPortiere(p, sq, par, mio) {
         ty = lineaPorta + uy * D;
     }
     // il portiere resta dentro la sua area
-    tx = clamp(tx, centroX - 70, centroX + 70);
-    ty = casa ? clamp(ty, lineaPorta - 70, lineaPorta - 6) : clamp(ty, lineaPorta + 6, lineaPorta + 70);
-    if (!muoviVerso(p, tx, ty, vel)) {
-        p.dir = direzioneVerso(palla.x - p.x, palla.y - p.y);
+    tx = clamp(tx, centroX - 60, centroX + 60);
+    ty = casa ? clamp(ty, lineaPorta - maxD, lineaPorta - 6) : clamp(ty, lineaPorta + 6, lineaPorta + maxD);
+    // reazione: appena parte un tiro verso la sua porta, il portiere impiega un attimo a muoversi
+    const tiroVersoPorta = !palla.titolare && (casa ? palla.vy > 2.4 : palla.vy < -2.4);
+    if (tiroVersoPorta) {
+        if (p.reazT === undefined || p.reazT < 0) p.reazT = par.reazione + (partita.so && partita.so.attivo ? 5 : 0);       // nuovo tiro (nello shootout reagisce un po' più tardi)
+        if (p.reazT > 0) { p.reazT--; p.inMovimento = false; vel = 0; }
+    } else {
+        p.reazT = -1;
+    }
+    if (vel === 0 || !muoviVerso(p, tx, ty, vel)) {
+        if (vel !== 0) p.dir = direzioneVerso(palla.x - p.x, palla.y - p.y);
     }
 
     // parata: una sola possibilità per ogni tiro; se la manca, a volte lo devia
     if (!palla.titolare && !palla.parata) {
         const versoMiaPorta = casa ? palla.vy > 0.5 : palla.vy < -0.5;
-        if (versoMiaPorta && Math.hypot(palla.x - p.x, palla.y - (p.y - 6)) < par.raggio) {
+        // punto di riferimento al centro dei piedi: così i due portieri (alto e basso) si comportano allo stesso modo
+        if (versoMiaPorta && Math.hypot(palla.x - p.x, palla.y - p.y) < par.raggio) {
             palla.parata = true;
-            if (Math.random() < par.parata) {
+            if (Math.random() < par.parata * (partita.so && partita.so.attivo ? 0.8 : 1)) {
                 prendiPalla(p);
                 p.tenutaT = casa ? 300 : 60;   // se è il tuo, hai ~5 secondi per decidere
                 mostraBanner('PARATA!', 0.9, false);
@@ -850,7 +889,8 @@ function aggiornaGiocatoreIA(p, sq) {
     if (p.contrT > 0) p.contrT--;
     const mio = palla.titolare === p;
 
-    if (p.ruolo === 'POR') { aggiornaPortiere(p, sq, par, mio); return; }
+    const tiraloShootout = partita.so && partita.so.attivo && partita.so.tiratore === p;
+    if (p.ruolo === 'POR' && !tiraloShootout) { aggiornaPortiere(p, sq, par, mio); return; }
 
     const porta = portaAvversaria(sq);
     const su = sq === squadraCasa;
@@ -864,12 +904,27 @@ function aggiornaGiocatoreIA(p, sq) {
         p.pensaT--;
         const dxp = porta.x - p.x, dyp = porta.y - p.y;
         const dist = Math.hypot(dxp, dyp);
+        if (tiraloShootout && partita.so.fase === 'tiro') {
+            const gk = partita.so.portiere;
+            const urgente = partita.so.t < 1.4;
+            if ((dist < 80 && p.pensaT <= 0) || urgente) {
+                const lato = gk.x <= porta.x ? 1 : -1;                     // angolo opposto a dove sta il portiere
+                const bersaglioX = porta.x + lato * (10 + Math.random() * 9);
+                const ang = Math.atan2(porta.y - p.y, bersaglioX - p.x) + (Math.random() - 0.5) * 2 * par.errore * 0.4;   // nello shootout tira più preciso
+                calcia(p, Math.cos(ang) * 4.8, Math.sin(ang) * 4.8);
+                return;
+            }
+            muoviVerso(p, porta.x, porta.y, par.vel * 0.95);               // avanza verso la porta
+            return;
+        }
         const compagniVicini = fuori.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 85).length;
         const compagniNecessari = Math.min(2, fuori.length - 1);
         const soloAvanti = compagniVicini < compagniNecessari;             // la squadra non è ancora salita: aspetto
         const tiroPossibile = dist < 150 && zonaTiroValida(sq, p.x, p.y);
         const haAspettato = p.pensaT < -150;                                // dopo ~2,5 s tira comunque
-        if (tiroPossibile && p.pensaT <= 0 && (!soloAvanti || dist < 125 || haAspettato)) {
+        // shootout: se il tempo sta per finire tira comunque
+        const urgenza = partita.so && partita.so.attivo && partita.so.fase === 'tiro' && partita.so.t < 1.4;
+        if ((tiroPossibile && p.pensaT <= 0 && (!soloAvanti || dist < 125 || haAspettato)) || urgenza) {
             const bersaglioX = porta.x + (Math.random() - 0.5) * 30;
             const ang = Math.atan2(porta.y - p.y, bersaglioX - p.x) + (Math.random() - 0.5) * 2 * par.errore;
             const v = 4.6;
@@ -935,7 +990,7 @@ function aggiornaGiocatoreIA(p, sq) {
     const rango = ordinati.indexOf(p);
     const distPalla = Math.hypot(rif.x - p.x, rif.y - p.y);
 
-    if (rango === 0 && distPalla < par.press * 1.3) {
+    if (rango === 0 && (distPalla < par.press * 1.3 || partita.inCorsa)) {
         // pressing e contrasto
         if (titolare && titolare.ruolo !== 'POR' && distPalla < 12 && p.contrT <= 0 && titolare.stun <= 0) {
             p.contrT = 45;
@@ -980,6 +1035,11 @@ function giocatoriDiMovimentoCasa() {
 // - automatico: passi al tuo giocatore più vicino al pallone
 // - manuale: resti sullo stesso giocatore finché non premi Cambia
 function sceltaGiocatoreUtente() {
+    if (partita.so && partita.so.attivo) {
+        // shootout: controlli solo chi tira per la tua squadra; quando tirano gli avversari non controlli nessuno
+        giocatoreUtente = (partita.so.sq === squadraCasa && partita.so.tiratore) ? partita.so.tiratore : fantasma;
+        return;
+    }
     const t = palla.titolare;
     if (t && squadraDi(t) === squadraCasa) { giocatoreUtente = t; return; }
     const valido = giocatoreUtente && giocatoreUtente.stato === 'dentro' && giocatoreUtente.ruolo !== 'POR';
@@ -1006,6 +1066,7 @@ function cambiaGiocatore() {
 // Linea di fondo fuori dai pali: se l'ultimo tocco è dell'attaccante è rimessa dal fondo (la batte il portiere),
 // se è stata deviata dalla squadra che difende è calcio d'angolo per gli attaccanti.
 function avviaRipresa(tipo, bx, by) {
+    if (partita.so && partita.so.attivo) { chiudiTiro(false, 'FUORI!'); return; }
     const ultimo = palla.ultimaSq;
     let sq, nome, x, y, px, py;
     if (tipo === 'laterale') {
@@ -1101,6 +1162,7 @@ function aggiornaPalla() {
     [squadraCasa, squadraOspite].forEach(sq => {
         inCampo(sq).forEach(p => {
             if (p.stun > 0) return;
+            if (p.ruolo === 'POR' && Math.hypot(palla.vx, palla.vy) > 2.4 && !(partita.so && partita.so.tiratore === p)) return;   // i tiri li para solo con la parata
             const d = Math.hypot(palla.x - p.x, palla.y - (p.y - 3));
             if (d < dmin) { dmin = d; scelto = p; }
         });
@@ -1110,6 +1172,8 @@ function aggiornaPalla() {
 
 function aggiornaGiocoDiProva() {
     if (partita.fase !== 'gioco') return;
+    if (partita.so && partita.so.attivo && partita.so.fase !== 'tiro') { azioniCoda.length = 0; return; }
+    if (partita.ripartenza) { azioniCoda.length = 0; return; }
     if (partita.ripresa) {
         // breve pausa prima della ripresa (il cronometro continua)
         azioniCoda.length = 0;
@@ -1119,6 +1183,7 @@ function aggiornaGiocoDiProva() {
     }
     sceltaGiocatoreUtente();
     const g = giocatoreUtente;     // il giocatore che controlli in questo momento
+    const portiereVero = g.ruolo === 'POR' && !(partita.so && partita.so.attivo);
 
     // --- il tuo giocatore ---
     const inp = leggiMovimento();
@@ -1131,7 +1196,7 @@ function aggiornaGiocoDiProva() {
     // velocità: normale, scatto (Shift, consuma fiato) o dribbling (breve accelerazione)
     let velocita = 1.2;
     let scattando = false;
-    if (inMov && tasti['shift'] && fiatoUtente > 0 && !affaticato && g.ruolo !== 'POR') {
+    if (inMov && tasti['shift'] && fiatoUtente > 0 && !affaticato && !portiereVero) {
         velocita = 1.65;
         scattando = true;
         fiatoUtente = Math.max(0, fiatoUtente - 0.7);
@@ -1156,7 +1221,7 @@ function aggiornaGiocoDiProva() {
         g.inMovimento = false;
     }
     limitaInCampo(g);
-    if (g.ruolo === 'POR') {
+    if (portiereVero) {
         // il portiere si muove solo dentro la sua area
         g.x = clamp(g.x, centroX - 60, centroX + 60);
         g.y = clamp(g.y, campo.y + campo.height - 50, campo.y + campo.height + 2);
@@ -1170,7 +1235,7 @@ function aggiornaGiocoDiProva() {
     const hoLaPalla = palleggio || vicinaLibera;
 
     // il portiere che tieni in mano la palla deve rilanciare entro qualche secondo
-    if (g.ruolo === 'POR' && palleggio) {
+    if (portiereVero && palleggio) {
         g.tenutaT--;
         if (g.tenutaT <= 0) {
             const dest = scegliPassaggio(g, squadraCasa);
@@ -1185,9 +1250,9 @@ function aggiornaGiocoDiProva() {
         if (az.a === 'tiro' && hoLaPalla && g.calcioT === 0) {
             g.calcioT = 10;
             const vTiro = az.forza !== undefined ? 3.6 + 2.6 * az.forza : 4.8;   // sul telefono la potenza dipende da quanto tieni premuto
-            if (g.ruolo === 'POR') calcia(g, g.mx * 7, g.my * 7);      // il portiere rinvia lungo
+            if (portiereVero) calcia(g, g.mx * 7, g.my * 7);      // il portiere rinvia lungo
             else calcia(g, g.mx * vTiro, g.my * vTiro);
-        } else if (az.a === 'rinvio' && hoLaPalla && g.ruolo === 'POR' && g.calcioT === 0) {
+        } else if (az.a === 'rinvio' && hoLaPalla && portiereVero && g.calcioT === 0) {
             g.calcioT = 10;
             calcia(g, g.mx * 7, g.my * 7);
         } else if (az.a === 'passaggio' && hoLaPalla && g.calcioT === 0) {
@@ -1206,7 +1271,7 @@ function aggiornaGiocoDiProva() {
             });
             if (dest) passaA(g, dest, 0, lungo ? 8 : 5);
             else calcia(g, g.mx * (lungo ? 7 : 2.8), g.my * (lungo ? 7 : 2.8));
-        } else if (az.a === 'dribbling' && palleggio && g.dribCd === 0 && g.ruolo !== 'POR') {
+        } else if (az.a === 'dribbling' && palleggio && g.dribCd === 0 && !portiereVero) {
             g.dribT = 16;       // breve scatto: in questo tempo non ti rubano la palla
             g.dribCd = 50;
         } else if (az.a === 'contrasto' && g.contrT === 0) {
@@ -1333,7 +1398,7 @@ function drawGame() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(px - 2, py - 2, 4, 4);
 
-    if (!inPausa) disegnaBanner();
+    if (!inPausa) { disegnaBanner(); disegnaTempi(); }
     if (partita.fase === 'fine') disegnaFinePartita();
     if (inPausa) {
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -2086,3 +2151,237 @@ btnFinePartita.addEventListener('click', () => {
     if (modalitaGioco === 'campionato') tornaAlCampionato();
     else { impostaPausa(false); btnBackToSelect.click(); }
 });
+
+
+// =====================================================================
+// RIPARTENZE: dal centro, dal fondo (1 contro 1) e corsa alla palla
+// =====================================================================
+// Un giocatore "fantasma": serve quando non controlli nessuno (ad esempio quando gli avversari tirano lo shootout)
+const fantasma = { x: 0, y: 0, ruolo: 'ATT', slot: 9, stato: 'fuori', stun: 0, calcioT: 0, contrT: 0,
+    mx: 0, my: -1, dir: 1, pensaT: 0, tenutaT: 0, dribT: 0, dribCd: 0, animT: 0, inMovimento: false };
+
+function mettiGiocatore(p, x, y, versoY) {
+    p.x = x; p.y = y;
+    p.mx = 0; p.my = versoY;
+    p.dir = versoY < 0 ? DIR.SU : DIR.GIU;
+    p.inMovimento = false; p.stun = 0; p.calcioT = 0; p.contrT = 0;
+}
+
+// Dopo un gol (da 2 contro 2 in su): batte dal centrocampo la squadra che ha subito, gli altri restano al loro posto
+function ripartenzaDalCentro(sq) {
+    const su = sq === squadraCasa;
+    const lista = inCampo(sq).filter(q => q.ruolo !== 'POR');
+    const candidati = lista.length ? lista : inCampo(sq);
+    if (!candidati.length) { mettiPallaAlCentro(); return; }
+    candidati.sort((a, b) => Math.abs(a.y - centroY) - Math.abs(b.y - centroY));
+    const t = candidati[0];
+    mettiGiocatore(t, centroX, centroY + (su ? 7 : -7), su ? -1 : 1);
+    palla.x = centroX; palla.y = centroY; palla.vx = 0; palla.vy = 0; palla.blocco = 0;
+    prendiPalla(t);
+    palla.tiroX = t.x; palla.tiroY = t.y; palla.ultimaSq = sq;
+}
+
+// 1 contro 1, dopo un gol: rimessa dal fondo per chi ha subito
+function ripartenzaDalFondo(sq) {
+    const su = sq === squadraCasa;
+    const t = inCampo(sq)[0];
+    if (!t) { mettiPallaAlCentro(); return; }
+    const linea = su ? campo.y + campo.height : campo.y;
+    mettiGiocatore(t, centroX, linea + (su ? -14 : 14), su ? -1 : 1);
+    palla.x = centroX; palla.y = linea + (su ? -20 : 20); palla.vx = 0; palla.vy = 0; palla.blocco = 0;
+    prendiPalla(t);
+    palla.tiroX = t.x; palla.tiroY = t.y; palla.ultimaSq = sq;
+}
+
+// Corsa alla palla: partita in 1 contro 1 e ripresa dopo la Ruota in parità.
+// Tutti partono dalla propria area di rigore (il portiere resta in porta), la palla è al centro,
+// 3 secondi per prepararsi con il cronometro fermo, poi chi arriva prima la prende.
+function avviaCorsa() {
+    const p = partita;
+    setGiocatoriInCampo(p.nIn, true);
+    mettiPallaAlCentro();
+    [squadraCasa, squadraOspite].forEach(sq => {
+        const su = sq === squadraCasa;
+        const linea = su ? campo.y + campo.height : campo.y;
+        const fronte = linea + (su ? -50 : 50);                       // bordo anteriore dell'area di rigore
+        const fuori = inCampo(sq).filter(q => q.ruolo !== 'POR');
+        const xs = fuori.length === 1 ? [centroX]
+            : (fuori.length === 2 ? [centroX - 42, centroX + 42] : [centroX - 56, centroX, centroX + 56]);
+        fuori.forEach((q, i) => mettiGiocatore(q, xs[i], fronte, su ? -1 : 1));
+    });
+    p.inCorsa = true;
+    p.ripartenza = { t: 3 };
+}
+
+// =====================================================================
+// SHOOTOUT
+// Si parte dal dischetto del centrocampo, 5 secondi per tirare, 4 tiri a squadra,
+// poi ad oltranza con lo stesso ordine di battuta. Pensato per essere riusato anche per lo shootout delle carte.
+// =====================================================================
+const SHOOTOUT_TIRI = 4;                    // tiri a squadra nella serie iniziale
+const SHOOTOUT_TEMPO = 5;                   // secondi per tirare
+const ORDINE_SHOOTOUT = [3, 1, 2, 0];       // chi tira: attaccante, difensore, difensore, portiere
+
+function avviaShootout() {
+    const p = partita;
+    p.nIn = 4;                              // nello shootout i tiri valgono da qualsiasi punto
+    p.ripresa = null;
+    p.ripartenza = null;
+    p.golDoppio = false;
+    p.ruota = false;
+    p.so = {
+        attivo: true,
+        primo: Math.random() < 0.5 ? squadraCasa : squadraOspite,   // chi batte per primo
+        tiri: { casa: [], ospite: [] },
+        turno: 0, fase: 'attesa', t: 2,
+        sq: null, tiratore: null, portiere: null, tiroFatto: false, esitoT: 0, vincitore: null
+    };
+    preparaTiroShootout();
+    mostraBanner('SHOOTOUT', 2, true);
+}
+
+function squadraDelTurno(so) {
+    return so.turno % 2 === 0 ? so.primo : avversariDi(so.primo);
+}
+
+function preparaTiroShootout() {
+    const so = partita.so;
+    so.sq = squadraDelTurno(so);
+    const avv = avversariDi(so.sq);
+    const slot = ORDINE_SHOOTOUT[Math.floor(so.turno / 2) % ORDINE_SHOOTOUT.length];
+    so.tiratore = so.sq.giocatori.find(q => q.slot === slot);
+    so.portiere = avv.giocatori.find(q => q.slot === 0);
+    [squadraCasa, squadraOspite].forEach(sq => sq.giocatori.forEach(q => { q.stato = 'fuori'; }));
+    mettiPallaAlCentro();                   // azzera anche gli stati dei giocatori
+    const su = so.sq === squadraCasa;
+    so.tiratore.stato = 'dentro';
+    mettiGiocatore(so.tiratore, centroX, centroY + (su ? 7 : -7), su ? -1 : 1);
+    const f = formazioneDi(avv)[0];
+    so.portiere.stato = 'dentro';
+    mettiGiocatore(so.portiere, f.x, f.y, su ? 1 : -1);
+    palla.x = centroX; palla.y = centroY;
+    prendiPalla(so.tiratore);
+    palla.tiroX = so.tiratore.x; palla.tiroY = so.tiratore.y;
+    so.fase = 'attesa'; so.t = 1.8; so.tiroFatto = false; so.esitoT = 0;
+    giocatoreUtente = su ? so.tiratore : fantasma;
+    camera.x = clamp(palla.x - VIEW_W / 2, 0, WORLD_W - VIEW_W);
+    camera.y = clamp(palla.y - (VIEW_H - margineComandi) / 2, 0, WORLD_H - VIEW_H + margineComandi);
+    const numero = Math.floor(so.turno / 2) + 1;
+    mostraBanner('TIRA ' + abbreviazione(so.sq.nome) + ' ' + (numero <= SHOOTOUT_TIRI ? numero + '/' + SHOOTOUT_TIRI : 'AD OLTRANZA'), 1.6, true);
+}
+
+function conteggioShootout(so) {
+    return {
+        gc: so.tiri.casa.filter(Boolean).length, go: so.tiri.ospite.filter(Boolean).length,
+        nc: so.tiri.casa.length, no: so.tiri.ospite.length
+    };
+}
+
+function golShootout(perCasa) {
+    const so = partita.so;
+    if (so.fase !== 'tiro') return;
+    if ((so.sq === squadraCasa) !== perCasa) return;       // il gol deve entrare nella porta giusta
+    chiudiTiro(true, 'GOL!');
+}
+
+function chiudiTiro(gol, testo) {
+    const so = partita.so;
+    if (!so || so.fase !== 'tiro') return;
+    so.tiri[so.sq === squadraCasa ? 'casa' : 'ospite'].push(!!gol);
+    so.fase = 'esito';
+    so.t = 1.8;
+    palla.vx = 0; palla.vy = 0;
+    mostraBanner(testo, 1.6, true);
+}
+
+function prossimoTiro() {
+    const so = partita.so;
+    const { gc, go, nc, no } = conteggioShootout(so);
+    let vincente = null;
+    if (nc < SHOOTOUT_TIRI || no < SHOOTOUT_TIRI) {
+        // serie iniziale: finisce prima se una squadra non può più recuperare
+        if (gc > go + (SHOOTOUT_TIRI - no)) vincente = squadraCasa;
+        else if (go > gc + (SHOOTOUT_TIRI - nc)) vincente = squadraOspite;
+    } else if (nc === no && gc !== go) {
+        vincente = gc > go ? squadraCasa : squadraOspite;      // ad oltranza: decide chi è avanti dopo che entrambe hanno tirato
+    }
+    if (vincente) {
+        partita.shoot = { casa: gc, osp: go };
+        so.vincitore = vincente;
+        so.fase = 'fine';
+        so.t = 2.4;
+        mostraBanner('VINCE ' + abbreviazione(vincente.nome), 2.2, true);
+        return;
+    }
+    so.turno++;
+    if (so.turno >= 60) {                                   // sicurezza: non può durare per sempre
+        const vinceCasa = Math.random() < 0.5;
+        partita.shoot = { casa: gc + (vinceCasa ? 1 : 0), osp: go + (vinceCasa ? 0 : 1) };
+        so.vincitore = vinceCasa ? squadraCasa : squadraOspite;
+        so.fase = 'fine'; so.t = 2.4;
+        mostraBanner('VINCE ' + abbreviazione(so.vincitore.nome), 2.2, true);
+        return;
+    }
+    preparaTiroShootout();
+}
+
+function aggiornaShootout(dt) {
+    const so = partita.so;
+    if (so.fase === 'attesa') {
+        so.t -= dt;
+        if (so.t <= 0) { so.fase = 'tiro'; so.t = SHOOTOUT_TEMPO; so.tiroFatto = false; mostraBanner('VIA!', 0.8, true); }
+        return;
+    }
+    if (so.fase === 'tiro') {
+        const titolare = palla.titolare;
+        if (titolare && titolare !== so.tiratore) { chiudiTiro(false, 'PARATA!'); return; }       // il portiere ha preso la palla
+        if (!so.tiroFatto) {
+            so.t -= dt;
+            if (so.t <= 0) { so.t = 0; chiudiTiro(false, 'TEMPO SCADUTO'); }
+        } else {
+            so.esitoT -= dt;
+            if (so.esitoT <= 0) chiudiTiro(false, 'FALLITO');
+        }
+        return;
+    }
+    if (so.fase === 'esito') {
+        so.t -= dt;
+        if (so.t <= 0) prossimoTiro();
+        return;
+    }
+    if (so.fase === 'fine') {
+        so.t -= dt;
+        if (so.t <= 0) {
+            so.attivo = false;
+            hudSO.textContent = '';
+            terminaPartita('S');
+        }
+    }
+}
+
+let hudSOCache = '';
+function aggiornaHudShootout() {
+    const so = partita.so;
+    const { gc, go } = conteggioShootout(so);
+    const riga = (tiri, sq) => abbreviazione(sq.nome) + ' ' + tiri.map(x => (x ? '\u25CF' : '\u25CB')).join('') +
+        '\u00B7'.repeat(Math.max(0, SHOOTOUT_TIRI - tiri.length));
+    const testo = riga(so.tiri.casa, squadraCasa) + '\n' + riga(so.tiri.ospite, squadraOspite);
+    const chiave = gc + '-' + go + testo;
+    if (chiave === hudSOCache) return;
+    hudSOCache = chiave;
+    hudPunteggio.textContent = abbreviazione(squadraCasa.nome) + ' ' + gc + ' - ' + go + ' ' + abbreviazione(squadraOspite.nome) + '  SO';
+    hudStato.textContent = 'SHOOTOUT';
+    hudSO.textContent = testo;
+}
+
+// conto alla rovescia (corsa alla palla) e tempo per tirare (shootout)
+function disegnaTempi() {
+    if (partita.ripartenza) {
+        testoCentrato(String(Math.max(1, Math.ceil(partita.ripartenza.t))), Math.round(VIEW_H * 0.45), 28, '#ffffff');
+        return;
+    }
+    const so = partita.so;
+    if (so && so.attivo && so.fase === 'tiro' && !so.tiroFatto) {
+        testoCentrato(Math.max(0, so.t).toFixed(1), Math.round(VIEW_H * 0.16), 18, so.t < 1.5 ? '#ff4040' : '#ffffff');
+    }
+}
